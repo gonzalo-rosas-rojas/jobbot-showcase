@@ -1,0 +1,8 @@
+{
+ "rust_lines": 44747,
+ "rust_files": 68,
+ "test_functions": 1007,
+ "dependencies": 20,
+ "counted_on": "2026-10-06",
+ "note": "Counted from src/ and tests/ with scripts/receipts.py; test functions are #[test] and #[tokio::test] attributes, not a test run."
+}

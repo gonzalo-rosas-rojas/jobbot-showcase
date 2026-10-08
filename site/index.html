@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Night Shift: a Rust bot that works a job search</title>
+<meta name="description" content="jobbot is a Rust program that reads public job boards, scores what it finds, tailors a CV and fills the forms between 18:00 and 09:00, and stops at every point where a person should decide. This page walks through one night. All data shown is fictional.">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; media-src 'self'; frame-src 'self'; font-src 'self'; connect-src 'self'; base-uri 'none'; form-action 'none'">
+<meta name="color-scheme" content="dark">
+<meta name="theme-color" content="#06080e">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Ccircle cx=%2716%27 cy=%2716%27 r=%2713%27 fill=%27none%27 stroke=%27%23e8b24a%27 stroke-width=%273%27/%3E%3Cpath d=%27M16 16V6%27 stroke=%27%23e8b24a%27 stroke-width=%273%27 stroke-linecap=%27round%27/%3E%3C/svg%3E">
+<link rel="stylesheet" href="assets/css/main.css">
+<script type="module" src="assets/js/main.js"></script>
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+
+<canvas id="sky" aria-hidden="true"></canvas>
+
+<!-- fixed layers that travel across the acts: the real panel on a plane, and the dial -->
+<div class="rig" aria-hidden="true">
+  <div class="plane" id="plane">
+    <iframe src="demo/index.html?scenario=urgent&amp;theme=dark" title="The real panel running on fictional data" tabindex="-1" loading="eager"></iframe>
+    <i class="plane-sheen"></i>
+  </div>
+</div>
+<div class="dial" id="dial" aria-hidden="true"></div>
+
+<div class="grain" aria-hidden="true"></div>
+
+<header class="hud" aria-label="Night shift status">
+  <p class="hud-left mono"><b>JOBBOT</b><span>NIGHT SHIFT</span></p>
+  <p class="hud-right mono"><button class="hud-try" type="button" data-try>Use the panel</button><span id="act-label"></span><span class="hud-time" id="clock">18:00</span></p>
+</header>
+<div class="progress" aria-hidden="true"><i id="progress"></i></div>
+
+<main id="main">
+
+  <!-- 01 · 18:00 · the window opens -->
+  <section class="act act-1" id="a1" data-scene="hero" data-from="0" data-to="1" data-label="THE WINDOW OPENS" aria-labelledby="h1">
+    <div class="stage">
+      <div class="a1-copy">
+        <p class="kicker">A Rust bot that runs a job search. Everything on this page is fictional data.</p>
+        <h1 class="mega" id="h1"><span class="line" data-split>The bot works</span><span class="line"><span data-split>the hours</span> <em class="serif" data-split="word">I don’t.</em></span></h1>
+        <p class="lede">From 18:00 to 09:00, jobbot reads public job boards, scores what it finds, tailors a CV and fills the forms. It stops at every point where a person should decide.</p>
+        <p class="cue mono"><i></i>SCROLL: THE SHIFT STARTS AT 18:00</p>
+      </div>
+      <div class="beat">
+        <p class="beat-title">This is the real panel.</p>
+        <p class="beat-sub">A Rust server renders it. You are looking at its demo build, with fictional data.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 02 · 19:00 · read -->
+  <section class="act act-2" id="a2" data-scene="read" data-from="1" data-to="4.5" data-label="READ" aria-labelledby="h2">
+    <div class="stage">
+      <div class="a2-copy">
+        <h2 class="h2" id="h2">Public boards only.<br>No logins, no keys.</h2>
+        <p class="sub">Greenhouse, Lever and Ashby publish their listings on purpose. jobbot reads exactly that.</p>
+        <dl class="stats mono">
+          <div><dt>OFFERS READ</dt><dd id="s-read">0</dd></div>
+          <div><dt>ABOVE THRESHOLD</dt><dd id="s-pass">0</dd></div>
+          <div><dt>TOP SCORE</dt><dd id="s-top">0</dd></div>
+        </dl>
+        <div class="slider" aria-hidden="true">
+          <p class="slider-head mono"><span>SCORE THRESHOLD</span><b id="s-th">60</b></p>
+          <div class="hist"></div>
+          <div class="slider-track"><i class="slider-fill"></i><i class="knob"></i></div>
+        </div>
+        <p class="note">412 fictional offers. The default threshold, 60, is the real one.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 03 · 22:30 · decide -->
+  <section class="act act-3" id="a3" data-scene="layers" data-from="4.5" data-to="8.233" data-label="DECIDE" aria-labelledby="h3">
+    <div class="stage">
+      <div class="a3-copy">
+        <h2 class="h2" id="h3">Five layers between an offer and a send.</h2>
+        <ol class="steps">
+          <li><b class="mono">POSTING</b><p>A public listing, read from the board’s own feed. Duplicates and excluded companies are dropped first.</p></li>
+          <li><b class="mono">SCORE</b><p>One number from six weighted factors: fit 30, stability 20, pay 15, learning 15, interview style 10, other 10. Below 60 the offer stays out of the queue.</p></li>
+          <li><b class="mono">CV</b><p>My master CV is reordered for the posting and gets one added sentence. It can only use skills already on it.</p></li>
+          <li><b class="mono">ANSWERS</b><p>Known answers come from a file I wrote. A question with no answer is left blank, never guessed.</p></li>
+          <li><b class="mono">GATE</b><p>Every send is a dry run until I approve it. Live mode sends only what is approved.</p></li>
+        </ol>
+        <div class="pips" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+      </div>
+      <div class="stack" aria-hidden="true">
+        <div class="layers">
+          <div class="plate p-post"><div class="pl-head"><i class="dot"></i><u class="w40"></u><u class="w20 faint"></u></div><u class="ln w90"></u><u class="ln w78"></u><u class="ln w84"></u><u class="ln w60"></u><div class="chips"><i>REMOTE</i><i>US$ RANGE</i><i>RUST</i></div></div>
+          <div class="plate p-score"><div class="ring-wrap"><svg class="ring" viewBox="0 0 120 120"><circle class="ring-bg" cx="60" cy="60" r="50"/><circle class="ring-fg" cx="60" cy="60" r="50"/></svg><b class="big" id="sc-num">0</b></div><div class="bars"><i></i><i></i><i></i><i></i><i></i><i></i></div></div>
+          <div class="plate p-cv"><div class="cv-col"><u class="ln w60"></u><div class="chips"><i>A</i><i>B</i><i>C</i><i>D</i><i>E</i></div><u class="ln w84"></u></div><span class="cv-arrow"></span><div class="cv-col"><u class="ln w60"></u><div class="chips"><i class="hit">C</i><i class="hit">A</i><i>B</i><i>D</i><i>E</i></div><u class="ln w84 add"></u></div></div>
+          <div class="plate p-ans"><div class="kv"><u class="k"></u><u class="v"></u></div><div class="kv"><u class="k"></u><u class="v"></u></div><div class="kv"><u class="k"></u><u class="v"></u></div><div class="kv gap"><u class="k"></u><u class="v"></u></div></div>
+          <div class="plate p-gate"><div class="gate-row"><span class="pill on">DRY RUN</span><span class="pill">LIVE</span></div><div class="gate-btn">SEND</div><div class="gate-count"><i></i><i></i><i></i><i></i><i></i></div></div>
+        </div>
+      </div>
+      <svg class="leaders" aria-hidden="true"><path/><path/><path/><path/><path/></svg>
+      <ul class="tags mono" aria-hidden="true">
+        <li><b>POSTING</b><span>read</span></li>
+        <li><b>SCORE</b><span>92 / 100</span></li>
+        <li><b>CV</b><span>reordered</span></li>
+        <li><b>ANSWERS</b><span>1 blank</span></li>
+        <li><b>GATE</b><span>dry run</span></li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 04 · 02:14 · fill -->
+  <section class="act act-4" id="a4" data-scene="form" data-from="8.233" data-to="10" data-label="FILL" aria-labelledby="h4">
+    <div class="stage">
+      <div class="a4-copy">
+        <h2 class="h2" id="h4">It leaves blanks.<br>It never invents.</h2>
+        <p class="sub">Every field it knows, it types. Every question it can’t answer, it frames and leaves to me.</p>
+        <dl class="stats mono two">
+          <div><dt>FILLED</dt><dd id="f-fill">0</dd></div>
+          <div><dt>NEEDS ME</dt><dd id="f-need">0</dd></div>
+        </dl>
+        <p class="note">A dry run: the page is filled, a screenshot is saved, nothing is sent.</p>
+      </div>
+      <div class="form" aria-hidden="true">
+        <div class="form-head"><i class="dot"></i><span>Lanternworks · Senior Rust Engineer</span><em class="mono">APPLICATION</em></div>
+        <div class="fld" data-text="Mateo Vidal"><label>Full name</label><span class="val"></span></div>
+        <div class="fld" data-text="mateo.vidal@example.com"><label>Email</label><span class="val"></span></div>
+        <div class="fld" data-text="Remote, Latin America"><label>Location</label><span class="val"></span></div>
+        <div class="fld" data-text="Contractor (B2B)"><label>Work authorization</label><span class="val"></span></div>
+        <div class="fld" data-text="In two weeks"><label>Available from</label><span class="val"></span></div>
+        <div class="fld file" data-text="cv-tailored.pdf"><label>CV</label><span class="val"></span></div>
+        <div class="fld blank tall"><label>Why this team?</label><b class="flag mono">NEEDS YOU</b></div>
+        <div class="fld blank"><label>Open to an on-call rotation?</label><span class="opts"><span><i></i>Yes</span><span><i></i>No</span></span><b class="flag mono">NEEDS YOU</b></div>
+        <div class="stamp">NEEDS YOU</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 05 · 04:00 · machine room -->
+  <section class="act act-5" id="a5" data-scene="machine" data-from="10" data-to="13" data-label="MACHINE ROOM" aria-labelledby="h5">
+    <div class="stage">
+      <div class="a5-copy">
+        <h2 class="h2" id="h5">One Rust program,<br>on my own PC.</h2>
+        <div class="caps">
+          <p class="cap">A scheduled task wakes it outside my work hours. It follows one chain of modules, and a person is the last link.</p>
+          <p class="cap">Under the chain: a clock that knows my calendar, a SQLite file that remembers every state, and the server behind the panel you saw.</p>
+        </div>
+        <dl class="stats mono">
+          <div><dt>LINES OF RUST</dt><dd id="r-lines">0</dd></div>
+          <div><dt>TEST FUNCTIONS</dt><dd id="r-tests">0</dd></div>
+          <div><dt>DEPENDENCIES</dt><dd id="r-deps">0</dd></div>
+        </dl>
+        <p class="note" id="r-note">Counted by scripts/receipts.py: #[test] attributes in src/ and tests/, not a test run.</p>
+      </div>
+      <div class="arch">
+        <svg viewBox="0 0 880 440" role="img" aria-label="Architecture: public boards feed discovery, scoring and CV tailoring; then form filling, a gate, a handoff and a person. Under the chain sit a work-hours window, a SQLite tracker and the panel server.">
+          <g class="wires" fill="none">
+            <path class="wire" pathLength="1" d="M170 72H235"/>
+            <path class="wire" pathLength="1" d="M405 72H470"/>
+            <path class="wire" pathLength="1" d="M640 72H705"/>
+            <path class="wire" pathLength="1" d="M790 104V150H85V196"/>
+            <path class="wire" pathLength="1" d="M170 228H235"/>
+            <path class="wire" pathLength="1" d="M405 228H470"/>
+            <path class="wire" pathLength="1" d="M640 228H705"/>
+            <path class="wire under" pathLength="1" d="M85 260V300H790V260M320 260V300M555 260V300M135 300V360M440 300V360M742 300V360"/>
+          </g>
+          <g class="node "><rect x="0" y="40" width="170" height="64" rx="10"/><text class="n-name" x="16" y="67">boards</text><text class="n-sub" x="16" y="88">public job feeds</text></g>
+          <g class="node "><rect x="235" y="40" width="170" height="64" rx="10"/><text class="n-name" x="251" y="67">discovery.rs</text><text class="n-sub" x="251" y="88">dedupe, exclusions</text></g>
+          <g class="node "><rect x="470" y="40" width="170" height="64" rx="10"/><text class="n-name" x="486" y="67">scoring.rs</text><text class="n-sub" x="486" y="88">6 factors, 0 to 100</text></g>
+          <g class="node "><rect x="705" y="40" width="170" height="64" rx="10"/><text class="n-name" x="721" y="67">cv.rs</text><text class="n-sub" x="721" y="88">reorder, never add</text></g>
+          <g class="node "><rect x="0" y="196" width="170" height="64" rx="10"/><text class="n-name" x="16" y="223">form.rs</text><text class="n-sub" x="16" y="244">Playwright fills</text></g>
+          <g class="node "><rect x="235" y="196" width="170" height="64" rx="10"/><text class="n-name" x="251" y="223">gate.rs</text><text class="n-sub" x="251" y="244">every check first</text></g>
+          <g class="node "><rect x="470" y="196" width="170" height="64" rx="10"/><text class="n-name" x="486" y="223">handoff.rs</text><text class="n-sub" x="486" y="244">fills, never sends</text></g>
+          <g class="node human"><rect x="705" y="196" width="170" height="64" rx="10"/><text class="n-name" x="721" y="223">a person</text><text class="n-sub" x="721" y="244">confirms the send</text></g>
+          <g class="node under"><rect x="10" y="360" width="250" height="64" rx="10"/><text class="n-name" x="26" y="387">window.rs</text><text class="n-sub" x="26" y="408">nothing runs while I work</text></g>
+          <g class="node under"><rect x="315" y="360" width="250" height="64" rx="10"/><text class="n-name" x="331" y="387">tracker.rs</text><text class="n-sub" x="331" y="408">SQLite, 12 states</text></g>
+          <g class="node under"><rect x="617" y="360" width="250" height="64" rx="10"/><text class="n-name" x="633" y="387">panel/</text><text class="n-sub" x="633" y="408">tiny_http, the panel you saw</text></g>
+          <g class="token" aria-hidden="true"><circle class="token-halo" r="16"/><circle class="token-dot" r="6"/></g>
+        </svg>
+      </div>
+    </div>
+  </section>
+
+  <!-- 06 · 07:00 · follow -->
+  <section class="act act-6" id="a6" data-scene="follow" data-from="13" data-to="14.75" data-label="FOLLOW" aria-labelledby="h6">
+    <div class="stage">
+      <div class="a6-copy">
+        <h2 class="h2" id="h6">Silence<br>is not the end.</h2>
+        <p class="sub">Every reply moves an application one step along the line. Ghosted is a state like the others: a late answer can still turn it into a test, an interview or an offer.</p>
+        <p class="note">Demo numbers. The states are the real ones in src/tracker.rs: submitted, replied, technical_test, interview, offer and ghosted.</p>
+      </div>
+      <div class="arch a6-viz">
+        <svg viewBox="0 0 900 440" role="img" aria-label="Funnel of 38 applications narrowing to 1 offer across five states, with a ghosted branch that can rejoin the line later.">
+          <defs><clipPath id="bandClip"><rect id="bandRect" x="0" y="0" width="0" height="440"/></clipPath></defs>
+          <path class="band" clip-path="url(#bandClip)" d="M50 90 C160 90 140 146 250 146 C360 146 340 161 450 161 C560 161 540 164 650 164 C760 164 740 168 850 168 L850 172 C740 172 760 176 650 176 C540 176 560 179 450 179 C340 179 360 194 250 194 C140 194 160 250 50 250 Z"/>
+          <path class="spine" pathLength="1" d="M50 170H850"/>
+          <g class="stop"><circle class="stop-ring" cx="50" cy="170" r="9"/><text class="num" x="50" y="52" text-anchor="middle">38</text><text class="state" x="50" y="206" text-anchor="middle">SUBMITTED</text></g>
+          <g class="stop"><circle class="stop-ring" cx="250" cy="170" r="9"/><text class="num" x="250" y="52" text-anchor="middle">11</text><text class="state" x="250" y="206" text-anchor="middle">REPLIED</text></g>
+          <g class="stop"><circle class="stop-ring" cx="450" cy="170" r="9"/><text class="num" x="450" y="52" text-anchor="middle">4</text><text class="state" x="450" y="206" text-anchor="middle">TEST</text></g>
+          <g class="stop"><circle class="stop-ring" cx="650" cy="170" r="9"/><text class="num" x="650" y="52" text-anchor="middle">3</text><text class="state" x="650" y="206" text-anchor="middle">INTERVIEW</text></g>
+          <g class="stop"><circle class="stop-ring" cx="850" cy="170" r="9"/><text class="num" x="850" y="52" text-anchor="middle">1</text><text class="state" x="850" y="206" text-anchor="middle">OFFER</text></g>
+          <path class="wire ghost-in" pathLength="1" fill="none" d="M50 182C50 300 150 344 272 344"/>
+          <g class="node ghost"><rect x="272" y="316" width="170" height="56" rx="10"/><text class="n-name" x="288" y="342">ghosted</text><text class="n-sub" x="288" y="360">still open</text></g>
+          <path class="wire ghost-out" pathLength="1" fill="none" d="M442 344C560 344 650 306 650 190"/>
+          <path class="ghost-head" d="M650 182L644 196H656Z"/>
+          <text class="ghost-label" x="470" y="392">A LATE ANSWER MOVES IT AGAIN</text>
+          <g class="token"><circle class="token-halo" r="16"/><circle class="token-dot" r="6"/></g>
+        </svg>
+      </div>
+    </div>
+  </section>
+
+  <!-- 07 · 08:45 · approve -->
+  <section class="act act-7" id="a7" data-scene="approve" data-from="14.75" data-to="14.917" data-label="APPROVE" aria-labelledby="h7">
+    <div class="stage">
+      <div class="a7-copy">
+        <h2 class="h7" id="h7"><span class="l">The bot proposes.</span><span class="l">I approve the first five.</span></h2>
+        <p class="sub">After five approvals it runs by itself, at most 25 a day. Until then, every send is mine.</p>
+      </div>
+      <div class="a7-card" aria-hidden="true">
+        <div class="pc-head"><i class="dot"></i><b>Lanternworks · Senior Rust Engineer</b></div>
+        <ul class="pc-lines mono"><li>SCORE 92</li><li>DRY RUN SAVED WITH SCREENSHOT</li><li>2 BLANKS ANSWERED BY ME</li></ul>
+        <div class="pc-btn"><span class="lab">APPROVE</span><i class="bar"></i></div>
+        <div class="five"><i></i><i></i><i></i><i></i><i></i></div>
+        <p class="five-label mono">APPROVED 0 / 5</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 08 · 09:00 · the window closes -->
+  <section class="act act-8" id="a8" data-scene="honest" data-from="14.917" data-to="15" data-label="THE WINDOW CLOSES" aria-labelledby="h8">
+    <div class="stage">
+      <div class="paper">
+        <h2 class="honest" id="h8" aria-label="Honest."></h2>
+        <ol class="rules">
+          <li><p>It never invents a skill.</p><code>src/cv.rs</code></li>
+          <li><p>It leaves a blank before it guesses.</p><code>src/form.rs</code></li>
+          <li><p>Nothing goes out without the gate, and never on LinkedIn or Upwork.</p><code>src/gate.rs</code></li>
+          <li><p>Where a bot would be flagged, it fills the form and I send it.</p><code>src/handoff.rs</code></li>
+          <li><p>It stays quiet while I work.</p><code>src/window.rs</code></li>
+        </ol>
+        <div class="paper-end">
+          <p class="foot mono">Built with AI assistance. All data on this page is fictional; the counts come from the real code, counted on 2026-10-06. The source is private for now.</p>
+          <button class="cta" type="button" data-try>Use the panel</button>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- the same demo build as the plane, full screen and live: for anyone who wants to click instead of scroll -->
+<div class="try" id="try" role="dialog" aria-modal="true" aria-label="The jobbot panel, running on fictional data" inert>
+  <div class="try-bar">
+    <p class="try-note"><b>jobbot panel</b> Fictional data. Nothing leaves your browser. Try J and K, or press ? for the keys.</p>
+    <button class="try-close" type="button">Back to the story <kbd>Esc</kbd></button>
+  </div>
+  <iframe class="try-frame" title="The jobbot panel, running on fictional data" data-src="demo/index.html?scenario=urgent&amp;theme=dark"></iframe>
+</div>
+</body>
+</html>
