@@ -39,7 +39,9 @@ export function createHonest(root) {
       const cx = vw - gutter - dock / 2 - 6;
       const cy = 54 + dock / 2 + 6;
       const reach = Math.hypot(Math.max(cx, vw - cx), Math.max(cy, vh - cy)) + 8;
-      const r = reach * easeInOut(smooth(0.05, 0.3, p));
+      // the sun starts growing with the act (it is a few pixels at first, easeInOut), so that it is already
+      // coming up when act 7 has finished leaving: no empty beat between the two
+      const r = reach * easeInOut(smooth(0, 0.28, p));
       paper.style.clipPath = `circle(${r.toFixed(1)}px at ${cx.toFixed(1)}px ${cy.toFixed(1)}px)`;
 
       const cover = r / reach;

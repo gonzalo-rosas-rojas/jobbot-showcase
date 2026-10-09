@@ -3,6 +3,8 @@
 // copy grows out of that very rectangle. Anywhere else it opens as a circle growing from the button, the same
 // gesture as the sun in act 8. Escape (or the button) closes it back to the exact place in the story.
 
+import { withLang } from "./lang.js";
+
 const html = document.documentElement;
 
 export function createTry() {
@@ -15,7 +17,7 @@ export function createTry() {
   let open = false;
 
   const load = () => {
-    if (!frame.getAttribute("src")) frame.setAttribute("src", frame.dataset.src);
+    if (!frame.getAttribute("src")) frame.setAttribute("src", withLang(frame.dataset.src));
   };
 
   // The panel handles its own Escape (keys help, drawer, cursor). Only when none of them is up does Escape leave.

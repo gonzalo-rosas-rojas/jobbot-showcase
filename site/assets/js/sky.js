@@ -34,7 +34,7 @@ function sample(nightT) {
   };
 }
 
-function makeLayer(rand, count, minH, maxH, minW, maxW, winSize, gap) {
+function makeLayer(rand, minH, maxH, minW, maxW, winSize, gap) {
   const buildings = [];
   let x = -40;
   while (x < 2600) {
@@ -49,7 +49,6 @@ function makeLayer(rand, count, minH, maxH, minW, maxW, winSize, gap) {
     buildings.push({ x, w, h, wins });
     x += w + (rand() < 0.3 ? 4 + rand() * 18 : 0);
   }
-  void count;
   return buildings;
 }
 
@@ -64,9 +63,9 @@ export function createSky(canvas) {
     ph: rand() * Math.PI * 2,
     sp: 0.4 + rand() * 1.6,
   }));
-  const far = makeLayer(rand, 0, 40, 170, 30, 70, 2.2, 3);
-  const mid = makeLayer(rand, 0, 50, 230, 40, 90, 3, 4);
-  const near = makeLayer(rand, 0, 30, 130, 60, 130, 4, 6);
+  const far = makeLayer(rand, 40, 170, 30, 70, 2.2, 3);
+  const mid = makeLayer(rand, 50, 230, 40, 90, 3, 4);
+  const near = makeLayer(rand, 30, 130, 60, 130, 4, 6);
 
   let w = 0;
   let h = 0;

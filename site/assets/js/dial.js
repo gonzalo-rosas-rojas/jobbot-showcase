@@ -65,8 +65,8 @@ export function createDial(host) {
   const busy1 = angleOf(WINDOW_START);
   el("path", { d: sector(R_RING - 52, R_RING, busy0, busy1), fill: "url(#hatch)", class: "busy" }, svg);
   el("path", { d: arcPath(R_RING - 52, busy0, busy1), class: "hair" }, svg);
-  const labelPath = el("path", { id: "busy-label-path", d: `M${f(polar(R_RING - 22, busy1)[0])} ${f(polar(R_RING - 22, busy1)[1])} A${R_RING - 22} ${R_RING - 22} 0 0 0 ${f(polar(R_RING - 22, busy0)[0])} ${f(polar(R_RING - 22, busy0)[1])}`, fill: "none" }, defs);
-  void labelPath;
+  // the arc the "OCCUPIED" caption runs along (the textPath below points at it by id)
+  el("path", { id: "busy-label-path", d: `M${f(polar(R_RING - 22, busy1)[0])} ${f(polar(R_RING - 22, busy1)[1])} A${R_RING - 22} ${R_RING - 22} 0 0 0 ${f(polar(R_RING - 22, busy0)[0])} ${f(polar(R_RING - 22, busy0)[1])}`, fill: "none" }, defs);
   const t = el("text", { class: "dial-micro busy-label", "text-anchor": "middle" }, svg);
   const tp = el("textPath", { href: "#busy-label-path", startOffset: "50%" }, t);
   tp.textContent = "OCCUPIED  09:00 - 18:00";

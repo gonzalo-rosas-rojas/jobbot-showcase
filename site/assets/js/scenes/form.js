@@ -23,9 +23,35 @@ export function createForm(root) {
   let lastFill = -1;
   let lastNeed = -1;
 
+  // phones: the form hangs from just under the docked dial and the headline sits at the bottom. On a short phone the room
+  // between them is smaller than the form, so the form is scaled (from its top edge) to the room, never below 0.62.
+  // Measured when the window changes size, not per frame.
+  let fit = 1;
+  let fitKey = "";
+  const measure = (vw, vh) => {
+    const key = vw + "x" + vh;
+    if (key === fitKey) return;
+    fitKey = key;
+    if (vw >= 760) {
+      fit = 1;
+      return;
+    }
+    // the form's height with every field typed (a long value can wrap), read in one go so that nothing is painted in between
+    const typed = fields.map((fd) => fd.val.textContent);
+    fields.forEach((fd) => { fd.val.textContent = fd.text; });
+    const height = form.offsetHeight;
+    fields.forEach((fd, i) => { fd.val.textContent = typed[i]; });
+    // 60 px kept under the form: a gap to the headline and the stamp, which hangs below the form's corner
+    fit = clamp((copy.offsetTop - 60 - form.offsetTop) / height, 0.62, 1);
+  };
+
   return {
+    resize() {
+      fitKey = "";
+    },
     update(p, ctx, _cur, fx) {
       const narrow = ctx && ctx.vw < 760;
+      measure(ctx ? ctx.vw : window.innerWidth, ctx ? ctx.vh : window.innerHeight);
       const inn = fx.inn;
       const out = fx.out;
       const vis = inn * (1 - out);
@@ -36,12 +62,10 @@ export function createForm(root) {
       const tilt = (1 - inn) * 12;
       const y = narrow ? 0 : -50;
       form.style.transform = narrow
-        ? `translate3d(0,${((1 - inn) * 6).toFixed(2)}vh,0)`
+        ? `translate3d(0,${((1 - inn) * 6).toFixed(2)}vh,0) scale(${fit.toFixed(4)})`
         : `translate3d(0,${y}%,0) perspective(1600px) rotateX(${tilt.toFixed(2)}deg)`;
       form.style.opacity = vis.toFixed(3);
       form.style.visibility = vis < 0.01 ? "hidden" : "visible";
-      if (narrow) form.style.top = "74px";
-      else form.style.top = "50%";
 
       // typing
       const f = clamp((p - T0) / (T1 - T0)) * fields.length;

@@ -31,13 +31,15 @@ can see move or can find in the code.
 
 | Layer | What it is |
 | --- | --- |
-| `engine.js` | Reads native scroll, smooths the read position (instant under reduced motion), turns it into a global night position `u` and a local progress `p` per act, and hands each scene `fx` = `{inn, out}` for the crossfades. |
+| `engine.js` | Reads native scroll, smooths the read position (instant under reduced motion), turns it into a global night position `u` and a local progress `p` per act, and hands each scene `fx` = `{inn, out, late}` for the crossfades (`late` is `out` half a hand-over later; only act 7 uses it). `u` jumps by up to 0.09 when two acts overlap, so anything that must be continuous across a hand-over reads an act's own `p` instead. |
 | Acts | Tall `<section>`s with a `position: sticky` stage. Acts 3 to 8 overlap the previous one by 130vh, so there is never an empty screen between two ideas. |
-| `rig.js` | The fixed layers that travel across acts: the real panel on a 3D plane (an iframe of the demo build) and the dial. Keyframes live in one place. |
+| `rig.js` | The fixed layers that travel across acts: the real panel on a 3D plane (an iframe of the demo build) and the dial. Keyframes live in one place. The panel carries its own dial and clock, so the story's dial yields while the plane is on screen: it fades over `u` 0.60 to 0.84 and is back in its corner when the plane has left (act 2's own progress 0.93 to 0.99). The docked panel takes the free column to the right of act 2's copy and is never cut (`min(0.8 × fill, column width, free height)`; 0.8 × fill on large screens, smaller on a laptop). It leaves with act 2's copy (progress 0.912 to 0.956), not before. On phones everything is stacked from measured boxes: the hero dial sits under the scroll cue (the end of the hero copy is read from the DOM, so it holds for any phone and any font), and the docked panel peeks up from under act 2's copy (its top edge is 22 px under the copy's last line). The dial also comes back a little later there (progress 0.95 to 1.0), when act 2's copy has gone. |
 | `sky.js` | One canvas: gradient, stars, a seeded skyline whose windows light up and go out. |
 | `scenes/*.js` | One module per act. Each owns its DOM and exposes `update(p, ctx, isCurrent, fx)`. |
-| `camera.js` | On phones, zooms the two diagrams (acts 5 and 6) to 2× and follows the action by rewriting the SVG `viewBox`, then pulls back. |
-| `try.js` | "Use the panel": the demo panel full screen, made `inert` behind it and with the keyboard returned to the button on close. While the panel is on screen in the story, the live copy grows out of that very rectangle (the plane the visitor was just looking at comes forward); anywhere else it grows as a circle from the button, the same gesture as the sun. |
+| `camera.js` | Zooms the two diagrams (acts 5 and 6) and follows the action by rewriting the SVG `viewBox`, then pulls back. On phones it is 2× inside the picture's own box. On wide screens (over 760 px wide and at least 600 px tall) the diagram lives in a window to the right of the copy (below the dial, above the city, edges faded) and the camera starts close on the first node and the token, follows the token and ends on the whole picture, so the subject is large at every scroll position instead of a small drawing in an empty sky. Short wide windows keep the plain centred diagram. On phones the window is as tall as the width allows (0.78 of it) unless the copy under the diagram needs the room; on a short phone it gets shorter, down to the picture's own 2:1 shape (`phoneRatio`). |
+| `try.js` | "Use the panel": the demo panel full screen, made `inert` behind it and with the keyboard returned to the button on close. While the panel is on screen in the story, the live copy grows out of that very rectangle (the plane the visitor was just looking at comes forward); anywhere else it grows as a circle from the button, the same gesture as the sun. The overlay's own copy of the panel is loaded lazily (when the pointer or the focus reaches a "Use the panel" button, or on the click), so a visitor who never opens it never pays for a second copy. |
+
+`lang.js` reads `?lang=es|en` from the story's own address (English when it is missing or anything else) and appends it to the address of both copies of the panel, so a panel build that reads it switches language. The v1 build in `site/demo/` does not read it (it is Spanish only), so today the parameter is passed and ignored.
 
 The panel is the real product page. Its demo build swaps the server calls for an in-page mock, so what the visitor
 sees is the actual interface and not a mock-up of it.
@@ -57,14 +59,26 @@ sees is the actual interface and not a mock-up of it.
 
 ## Decisions worth remembering
 
-- **No libraries, no fonts, no images.** Everything is hand-written and the page has a strict CSP. This costs some
-  polish (system font stacks mean the condensed display face is Bahnschrift on Windows and a fallback elsewhere)
-  and buys a page that cannot break because a CDN did, and that a reviewer can read end to end.
+- **No libraries, no images, three own fonts.** Everything is hand-written and the page has a strict CSP (`font-src 'self'`).
+  The three voices travel with the page as subset woff2 files under `site/assets/fonts/` (Barlow Condensed 700 for the
+  condensed headlines, Instrument Serif Italic for the one italic word, Geist Mono 400 for the instruments; all OFL 1.1,
+  53 KB together, origin and hashes in `site/assets/fonts/VENDORED.md`). `font-display: block`, with the system faces the
+  piece first used (Bahnschrift, Palatino, Cascadia) kept behind them as fallbacks. This buys a page that looks the same on
+  every machine, cannot break because a CDN did, and that a reviewer can read end to end.
 - **Native scroll, smoothed read position, not scroll hijacking.** The browser still owns scrolling, so keyboard,
   touch, find-in-page and anchors keep working.
 - **Overlap instead of padding.** The first version left a quarter of the scroll empty between acts. Overlapping
   sections with an out-then-in crossfade removed the dead frames.
 - **The act-1 to act-2 seam stays flush** because the panel plane's keyframes are keyed to it.
+- **One clock per frame.** While the panel is on screen its own dial and clock are the only ones; the story's dial
+  steps aside and returns when the panel leaves (the sun of act 8 still comes out of it).
+- **The hand-over from act 2 to act 3 has no empty side.** The panel used to leave about 25 vh before act 2's copy
+  did; now both leave in the same window and the dial comes back into it.
+- **Between acts 7 and 8 there is no empty beat.** Act 7 leaves over its last 30 vh (`late`), and the sun starts
+  growing with act 8 (`easeInOut` over its first 0.28 of progress, the same curve as before), so it is already
+  rising when the last of act 7 is gone. It used to be a 37 vh stretch with nothing but sky and city.
+- **Phones are a stack, not a small desk.** Every collision of the phone version came from laying the desktop composition out in 390 px (the dial under the headline, the panel over the counters, the form over the dial). The phone has its own composition: hero copy on top and the dial under it; headline, counters and slider on top and the panel peeking up under them; the form hanging under the docked dial and the headline under the form. Positions come from measured boxes (`rig.js`, `form.js`, the two diagram scenes), and every phone-only timing or size sits behind `vw < 760` / `max-width: 760px`, so the desktop composition is untouched. Checked with a scan that judges the boxes every 40 px of scroll (copy against dial, panel and its counters; copy against copy of the same act) at 390x844, 430x932, 360x740 and 375x667.
+- **The panel is loaded twice on purpose.** One iframe that travels from the plane to the overlay was tried and does not work without changing the look. A plain move reloads the panel; `Element.moveBefore()` (Chromium 133 and later only) keeps it running, but the same iframe then has to be laid out twice: the plane lays the panel out at 1920x1080 and scales it, the overlay lays it out at the window's size, so at the hand-over the panel visibly reflows inside the rectangle the gesture starts from, and there is nothing left to cross-fade into when the overlay closes. Two copies, the overlay's loaded lazily, keep the gesture as approved. Pictures and numbers: `qa/demo-y-deudas/spike-iframe.mjs`.
 - **Phones get a camera, not a different diagram.** Redrawing the architecture vertically would be a second
   artwork to maintain. A zoom that follows the token reuses the one drawing and keeps its labels at about 10 px or more.
 - **The live panel is opt-in.** The story never needs a click. A visitor who wants to touch the product can, and
@@ -124,7 +138,8 @@ the story does not feel like arriving in a different app. Same palette, same eas
 
 - The visual level is deliberately *defensible*, not a clone of the best award-site reels: those lean on
   photographic or 3D assets, and this page draws everything in code. Closing that gap needs authored imagery.
-- The demo panel is in Spanish (it is the product's language). The page around it is English.
+- The demo panel is in Spanish (it is the product's language). The page around it is English. `?lang=` is passed to the panel but the v1 build ignores it.
+- On phones the two diagrams' labels are readable (10 px or more) while the camera follows the token, and small (about 5 px) in the last moment of each act, when it pulls back to show the whole picture. That is the overview, not the reading.
 - The palette is derived from colour theory (OKLCH, WCAG, colour-blind simulation), not matched to the reference
   frames. One pair stays weak by design: green and red are nearly the same under protanopia in the light theme
   (ΔE 3), so no state relies on colour alone (a "!" and "vencida" for late, a "✓" and "Aprobada" for confirmed).

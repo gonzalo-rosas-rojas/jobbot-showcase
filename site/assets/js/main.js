@@ -14,6 +14,7 @@ import { createFollow } from "./scenes/follow.js";
 import { createApprove } from "./scenes/approve.js";
 import { createHonest } from "./scenes/honest.js";
 import { createTry } from "./try.js";
+import { withLang } from "./lang.js";
 
 document.documentElement.classList.add("js");
 if (reducedMotion()) document.documentElement.classList.add("reduced");
@@ -23,9 +24,11 @@ const SCENES = { hero: createHero, read: createRead, layers: createLayers, form:
 const dialHost = document.getElementById("dial");
 const plane = document.getElementById("plane");
 const iframe = plane.querySelector("iframe");
+// the panel on the plane starts loading here (not from the HTML) so that ?lang= of this address reaches it in the one request
+iframe.src = withLang(iframe.dataset.src);
 const dial = createDial(dialHost);
 const sky = createSky(document.getElementById("sky"));
-const rig = createRig({ dialHost, dial, plane, iframe });
+const rig = createRig({ dialHost, dial, plane, iframe, heroCopy: document.querySelector(".a1-copy"), readCopy: document.querySelector(".a2-copy") });
 const clockEl = document.getElementById("clock");
 const labelEl = document.getElementById("act-label");
 const progEl = document.getElementById("progress");
@@ -72,12 +75,14 @@ const engine = createEngine({
 
 function relayout() {
   rig.layout(window.innerWidth, window.innerHeight);
-  engine.measure();
+  engine.refit();
   engine.snap();
 }
 window.addEventListener("resize", relayout);
 relayout();
 // the iframe knows its size only after layout; once the demo has loaded, lay out again
 iframe.addEventListener("load", relayout);
+// the phone layout is measured from the copy's boxes, which move when a web font replaces its fallback: measure again then
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(relayout);
 // a hook for screenshots and tests: jump to a scroll position with no smoothing
 window.__night = { snap: () => engine.snap(), rig, tryPanel };

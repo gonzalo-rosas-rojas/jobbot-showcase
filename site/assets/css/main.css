@@ -7,6 +7,13 @@
    - one idea per screen, ~30 words at most; motion is tied to scroll or to a data change, never to a timer
    - only transform, opacity and clip-path are animated */
 
+/* The three voices are own files now (OFL 1.1, see assets/fonts/VENDORED.md); the system fonts the piece used before stay behind them in the stacks.
+   font-display: block on purpose: 53 KB from the same host, so a short invisible moment beats a visible swap of metrics in a piece this staged.
+   Geist Mono is one weight (400): the range 400 700 stops the browser from smearing a fake bold over the labels that ask for 500 or 600. */
+@font-face { font-family: "Barlow Condensed"; src: url("../fonts/barlow-condensed-700.woff2") format("woff2"); font-weight: 700; font-style: normal; font-display: block; }
+@font-face { font-family: "Instrument Serif"; src: url("../fonts/instrument-serif-400italic.woff2") format("woff2"); font-weight: 400; font-style: italic; font-display: block; }
+@font-face { font-family: "Geist Mono"; src: url("../fonts/geist-mono-400.woff2") format("woff2"); font-weight: 400 700; font-style: normal; font-display: block; }
+
 :root {
   --night-0: #06080e;
   --night-1: #0a0e19;
@@ -27,9 +34,9 @@
   --ease: cubic-bezier(0.23, 1, 0.32, 1);
   --ease-expo: cubic-bezier(0.16, 1, 0.3, 1);
 
-  --display: "Bahnschrift", "Bahnschrift Condensed", "DIN Condensed", "Arial Narrow", "Roboto Condensed", system-ui, sans-serif;
+  --display: "Barlow Condensed", "Bahnschrift", "Bahnschrift Condensed", "DIN Condensed", "Arial Narrow", "Roboto Condensed", system-ui, sans-serif;
   --serif: "Instrument Serif", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
-  --mono: "JetBrains Mono", "Cascadia Mono", "SF Mono", ui-monospace, Consolas, monospace;
+  --mono: "Geist Mono", "JetBrains Mono", "Cascadia Mono", "SF Mono", ui-monospace, Consolas, monospace;
   --body: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
 
   --gutter: clamp(20px, 4.2vw, 64px);
@@ -130,7 +137,7 @@ p { margin: 0; }
   text-transform: uppercase; font-size: clamp(54px, 11.2vw, 230px); line-height: 0.88; letter-spacing: -0.012em; margin: 0;
 }
 .mega .line { display: block; }
-.serif { font-family: var(--serif); font-style: italic; font-weight: 400; font-stretch: 100%; font-variation-settings: normal; text-transform: none; letter-spacing: -0.02em; }
+.serif { font-family: var(--serif); font-style: italic; font-weight: 400; font-stretch: 100%; font-variation-settings: normal; text-transform: none; letter-spacing: -0.01em; word-spacing: 0.08em; }
 .mega .serif { font-size: 1.04em; line-height: 0.8; }
 .lede { max-width: 44ch; margin-top: 4.4vh; color: var(--text-dim); font-size: clamp(15px, 1.15vw, 18px); line-height: 1.6; }
 .cue { margin-top: 6.5vh; display: flex; align-items: center; gap: 14px; color: var(--text-dim); }
@@ -170,8 +177,8 @@ p { margin: 0; }
 .hist i { display: block; height: calc(var(--h) * 100%); min-height: 2px; background: var(--text-faint); opacity: 0.5; }
 .hist i.on { background: var(--gold); opacity: 1; }
 .slider-track { position: relative; height: 2px; background: var(--line-strong); margin-top: 8px; }
-.slider-fill { position: absolute; left: 0; top: 0; height: 100%; background: var(--text-dim); }
-.knob { position: absolute; top: 50%; width: 14px; height: 14px; margin: -7px 0 0 -7px; border-radius: 50%; background: var(--text); box-shadow: 0 0 0 4px rgba(233, 239, 247, 0.14); }
+.slider-fill { position: absolute; left: 0; top: 0; width: 100%; height: 100%; background: var(--text-dim); transform-origin: 0 50%; transform: scaleX(0); }
+.knob { position: absolute; left: 0; top: 50%; width: 14px; height: 14px; margin: -7px 0 0 -7px; border-radius: 50%; background: var(--text); box-shadow: 0 0 0 4px rgba(233, 239, 247, 0.14); }
 .note { color: var(--text-dim); margin-top: 14px; font-size: 13px; line-height: 1.5; max-width: 48ch; }
 
 
@@ -331,7 +338,7 @@ html:not(.js) .cap { position: static; opacity: 1; margin-bottom: 12px; }
 
 /* act 07: approve — the one place a human speaks (italic serif), and the one place mint appears */
 .a7-copy { position: absolute; left: var(--gutter); top: clamp(104px, 18vh, 190px); width: min(52vw, 780px); will-change: transform, opacity; }
-.h7 { margin: 0 0 3vh; font-family: var(--serif); font-style: italic; font-weight: 400; font-size: clamp(40px, 6vw, 112px); line-height: 0.96; letter-spacing: -0.02em; }
+.h7 { margin: 0 0 3vh; font-family: var(--serif); font-style: italic; font-weight: 400; font-size: clamp(40px, 6vw, 112px); line-height: 0.96; letter-spacing: -0.01em; word-spacing: 0.08em; }
 .h7 .l { display: block; }
 .a7-copy .sub { max-width: 36ch; color: var(--text); font-size: clamp(15px, 1.2vw, 19px); }
 .a7-card {
@@ -396,12 +403,35 @@ html.try-open { overflow: hidden; }
 .on-paper .hud-left b, .on-paper .hud-time { color: var(--paper-ink); }
 .on-paper .hud-left span, .on-paper .hud-right { color: var(--paper-dim); }
 
+/* ---------- wide screens: acts 5 and 6 ---------- */
+/* The two diagrams live in a window to the right of the copy (clear of the HUD and the dial above it and of the city
+   below it) and a camera (a viewBox, see camera.js) moves inside it: close on the token first, the whole picture at
+   the end. The window's edges fade, so nothing is cut by a hard line. Phones keep their own layout below, and a wide but
+   short window (a phone on its side) keeps the plain centred diagram. */
+@media (min-width: 761px) and (min-height: 600px) {
+  .arch {
+    left: calc(var(--gutter) + min(34vw, 520px) + 2vw); right: 0; top: 184px; bottom: 14vh; width: auto; transform: none; overflow: hidden;
+    -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 var(--fade, 36px)), linear-gradient(180deg, transparent 0, #000 28px, #000 calc(100% - 28px), transparent 100%);
+    -webkit-mask-composite: source-in;
+    mask-image: linear-gradient(90deg, transparent 0, #000 var(--fade, 36px)), linear-gradient(180deg, transparent 0, #000 28px, #000 calc(100% - 28px), transparent 100%);
+    mask-composite: intersect;
+  }
+  .arch svg { position: absolute; left: 0; top: 0; width: 100%; height: 100%; overflow: hidden; }
+}
+
 /* ---------- narrow screens ---------- */
 @media (max-width: 760px) {
   .plane { width: 480px; height: 1040px; margin: -520px 0 0 -240px; }
-  /* the hero's big numerals would sit on the copy; the HUD clock already says the time */
-  .dial .dial-time { opacity: 0; }
-  .kicker { font-size: 10px; }
+  /* hero: the copy starts higher so that the dial (rig.js places it under the cue) has the room, and the kicker is 12 px, not 10 */
+  .a1-copy { top: 84px; }
+  .kicker { font-size: 12px; margin-bottom: 2.2vh; }
+  .lede { margin-top: 3.2vh; }
+  .cue { margin-top: 3.2vh; }
+  /* the beat sits above the rising panel and left of the dial's corner, narrow enough for the dial to fly past it */
+  .beat { top: 72px; width: calc(50vw - 28px); }
+  .beat-title { font-size: clamp(28px, 8.4vw, 34px); margin-bottom: 1.4vh; }
+  .beat-sub { font-size: 13px; line-height: 1.5; }
+  .stats dt { font-size: 11px; letter-spacing: 0.02em; color: var(--text-dim); } /* Geist Mono is a hair wider than the mono it replaced: 0.06em wrapped "ABOVE THRESHOLD" in a 107 px column */
   .mega { font-size: clamp(46px, 17vw, 110px); }
   .a2-copy { width: auto; right: var(--gutter); top: 150px; }
   .a2-copy .note { display: none; }
@@ -417,23 +447,35 @@ html.try-open { overflow: hidden; }
   .a4-copy { width: auto; right: var(--gutter); top: auto; bottom: 4vh; }
   .a4-copy .h2 { font-size: clamp(26px, 8vw, 44px); }
   .a4-copy .stats, .a4-copy .note { display: none; }
-  .form { left: var(--gutter); right: var(--gutter); width: auto; }
+  /* the form sits below the docked dial (which ends at y 144) and above the headline: a little tighter than on a desk */
+  .form { left: var(--gutter); right: var(--gutter); width: auto; top: 156px; padding: 16px 22px 44px; transform-origin: 50% 0; }
+  .form-head { margin-bottom: 8px; }
+  .fld { min-height: 40px; gap: 10px; grid-template-columns: 32% 1fr; }
+  .fld .val { font-size: 14.5px; }
+  .fld.blank { margin-top: 10px; padding: 10px 12px; }
+  .fld.blank.tall { min-height: 66px; }
   .stamp { right: -6px; bottom: -22px; }
   .a5-copy { width: auto; right: var(--gutter); top: auto; bottom: 4vh; }
   .a5-copy .h2 { font-size: clamp(26px, 8vw, 44px); }
   .caps { min-height: 17vh; }
   .a5-copy .note { display: none; }
-  .arch { left: 0; right: 0; width: auto; top: 19vh; transform: none; }
+  .arch { left: 0; right: 0; width: auto; top: max(19vh, 150px); transform: none; } /* never under the docked dial (it ends at 144) */
   .arch svg { overflow: hidden; }
   .state { font-size: 15px; letter-spacing: 0.1em; }
   .ghost-label { font-size: 14px; letter-spacing: 0.06em; }
   .a6-copy { width: auto; right: var(--gutter); top: auto; bottom: 4vh; }
   .a6-copy .h2 { font-size: clamp(26px, 8vw, 44px); }
   .a6-copy .sub, .a6-copy .note { display: none; }
-  .a7-copy { width: auto; right: var(--gutter); top: 84px; }
+  .a7-copy { width: auto; right: var(--gutter); top: 160px; } /* under the docked dial (it ends at 144), a little lower than the other acts' copy because the exit lifts it */
   .h7 { font-size: clamp(34px, 11vw, 64px); }
   .a7-copy .sub { display: none; }
   .a7-card { left: var(--gutter); right: var(--gutter); width: auto; top: auto; bottom: 5vh; }
+  /* short phones (a browser with its bars up): the headline and the card share less height, so the headline is a size down */
+  @media (max-height: 760px) {
+    .h7 { font-size: clamp(28px, 9.6vw, 40px); }
+    /* the cue sits on the lit horizon of the sunset here: a dark halo keeps the dim colour above 4.5:1 */
+    .cue { text-shadow: 0 0 10px rgba(8, 10, 20, .9), 0 0 3px rgba(8, 10, 20, .75); }
+  }
   .rules li { grid-template-columns: 1fr; gap: 4px; padding: 9px 0; }
   .rules p { font-size: 15px; }
   .rules code { font-size: 11px; }

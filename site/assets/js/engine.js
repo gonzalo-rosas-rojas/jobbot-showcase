@@ -62,6 +62,9 @@ export function createEngine({ acts, onFrame }) {
         const fx = {
           inn: i === 0 ? 1 : smoothPx(F * 0.5, F, local),
           out: i === items.length - 1 ? 0 : smoothPx(it.range - F, it.range - F * 0.5, local),
+          // the same exit, half a hand-over later: it ends exactly when the pinned stage is released. Only act 7
+          // uses it, so that the sun of act 8 (which grows from the first pixel) takes over without an empty beat.
+          late: i === items.length - 1 ? 0 : smoothPx(it.range - F * 0.5, it.range, local),
         };
         if (it.scene && it.scene.update) it.scene.update(it.p, ctx, i === idx, fx);
       }
@@ -89,9 +92,12 @@ export function createEngine({ acts, onFrame }) {
   }
 
   window.addEventListener("scroll", wake, { passive: true });
-  window.addEventListener("resize", () => {
+  function refit() {
     measure();
     for (const it of items) if (it.scene && it.scene.resize) it.scene.resize({ vw, vh });
+  }
+  window.addEventListener("resize", () => {
+    refit();
     wake();
   });
   document.addEventListener("visibilitychange", () => {
@@ -106,6 +112,8 @@ export function createEngine({ acts, onFrame }) {
   render();
   return {
     measure,
+    /** measure again and tell the scenes that keep measurements (the window changed, or a web font changed the boxes) */
+    refit,
     wake,
     /** jump with no smoothing (used by screenshots and the "reduced motion" path) */
     snap() {

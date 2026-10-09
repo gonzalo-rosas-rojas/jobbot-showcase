@@ -3,13 +3,14 @@
 // the funnel band narrows (demo numbers: 38, 11, 4, 3, 1). Then the branch the code comments on:
 // ghosted is not terminal, a late answer can move it again.
 
-import { lerp, smooth } from "../util.js";
-import { createCamera } from "../camera.js";
+import { lerp, smooth, track } from "../util.js";
+import { createCamera, createWideCamera, phoneRatio } from "../camera.js";
 
 const XS = [50, 250, 450, 650, 850];
 const Y = 170;
 const AT = [0.1, 0.24, 0.38, 0.52]; // when the token leaves stop k for stop k+1
 const STEP = 0.09;
+const CLOSE = 2.3; // wide screens: window px per SVG unit at the closest the camera gets
 
 export function createFollow(root) {
   const copy = root.querySelector(".a6-copy");
@@ -25,9 +26,23 @@ export function createFollow(root) {
   const label = root.querySelector(".ghost-label");
   const hit = new Array(stops.length).fill(false);
   const camera = createCamera(viz.querySelector("svg"), { w: 900, h: 440 });
+  const wideCam = createWideCamera(viz, viz.querySelector("svg"), { w: 900, h: 440 });
+
+  // phones: the camera's window is as tall as the free room between the dial and the copy (see machine.js)
+  let roomKey = "";
+  const fitRoom = (vw, vh) => {
+    const key = vw + "x" + vh;
+    if (key === roomKey) return;
+    roomKey = key;
+    if (vw < 760) camera.setRatio(phoneRatio(copy.offsetTop - 12 - viz.offsetTop, viz.offsetWidth));
+  };
 
   return {
+    resize() {
+      roomKey = "";
+    },
     update(p, ctx, _cur, fx) {
+      fitRoom(ctx ? ctx.vw : window.innerWidth, ctx ? ctx.vh : window.innerHeight);
       const inn = fx.inn;
       const gone = fx.out;
       const vis = inn * (1 - gone);
@@ -57,12 +72,20 @@ export function createFollow(root) {
       let lag = 0;
       for (const a of AT) lag += smooth(a + 0.03, a + STEP + 0.03, p);
       const branch = smooth(0.56, 0.72, p);
-      camera.aim(
-        ctx && ctx.vw < 760,
-        lerp(XS[0] + lag * 200 + 80, 500, branch),
-        lerp(Y, 230, branch),
-        lerp(450, 560, branch),
-      );
+      const vw = ctx ? ctx.vw : window.innerWidth;
+      const vh = ctx ? ctx.vh : window.innerHeight;
+      if (vw > 760 && vh >= 600) {
+        // wide screens: the same camera in a window right of the copy, close on the token first, whole picture at the end
+        camera.aim(false);
+        const want = CLOSE * (vh / 1080) * track([[0, 1.25], [0.1, 1.25], [0.3, 1], [0.52, 0.8], [0.62, 0.6], [0.76, 0], [1, 0]], p);
+        const zoom = wideCam.zoomFor(vw, vh, want);
+        const away = smooth(0.5, 0.76, p);
+        // the numbers sit above the line and the state names below it, so the camera looks between them
+        wideCam.aim(vw, vh, lerp(x, 450, away), lerp(130, 215, away), zoom);
+      } else {
+        wideCam.off();
+        camera.aim(vw < 760, lerp(XS[0] + lag * 200 + 80, 500, branch), lerp(Y, 230, branch), lerp(450, 560, branch));
+      }
 
       // ghosted: a branch that is not a dead end
       ghost.style.opacity = smooth(0.62, 0.7, p).toFixed(3);

@@ -9,6 +9,9 @@
 <meta name="color-scheme" content="dark">
 <meta name="theme-color" content="#06080e">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Ccircle cx=%2716%27 cy=%2716%27 r=%2713%27 fill=%27none%27 stroke=%27%23e8b24a%27 stroke-width=%273%27/%3E%3Cpath d=%27M16 16V6%27 stroke=%27%23e8b24a%27 stroke-width=%273%27 stroke-linecap=%27round%27/%3E%3C/svg%3E">
+<link rel="preload" href="assets/fonts/barlow-condensed-700.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/instrument-serif-400italic.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="assets/fonts/geist-mono-400.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="assets/css/main.css">
 <script type="module" src="assets/js/main.js"></script>
 </head>
@@ -20,7 +23,7 @@
 <!-- fixed layers that travel across the acts: the real panel on a plane, and the dial -->
 <div class="rig" aria-hidden="true">
   <div class="plane" id="plane">
-    <iframe src="demo/index.html?scenario=urgent&amp;theme=dark" title="The real panel running on fictional data" tabindex="-1" loading="eager"></iframe>
+    <iframe data-src="demo/index.html?scenario=urgent&amp;theme=dark" title="The real panel running on fictional data" tabindex="-1"></iframe>
     <i class="plane-sheen"></i>
   </div>
 </div>

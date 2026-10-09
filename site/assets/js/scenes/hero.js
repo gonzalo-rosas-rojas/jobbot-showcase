@@ -45,13 +45,16 @@ export function createHero(root) {
   const lede = root.querySelector(".lede");
   const beat = root.querySelector(".beat");
   return {
-    update(p) {
-      const b = smooth(0.3, 0.4, p) * (1 - smooth(0.58, 0.7, p));
+    update(p, ctx) {
+      // phones: the plane rises under a beat that sits above it, so the beat leaves before the plane's top reaches it
+      const narrow = ctx && ctx.vw < 760;
+      const b = smooth(0.3, 0.4, p) * (1 - (narrow ? smooth(0.5, 0.57, p) : smooth(0.58, 0.7, p)));
       beat.style.opacity = b.toFixed(3);
       beat.style.transform = `translate3d(0,${((1 - smooth(0.3, 0.4, p)) * 4).toFixed(2)}vh,0)`;
       const out = smooth(0.08, 0.26, p);
       copy.style.opacity = (1 - out).toFixed(3);
-      copy.style.transform = `translate3d(0,${(-out * 9).toFixed(2)}vh,0)`;
+      // phones: a shorter lift, so the kicker never slides up under the HUD while it fades
+      copy.style.transform = `translate3d(0,${(-out * (narrow ? 3 : 9)).toFixed(2)}vh,0)`;
       cue.style.opacity = (1 - smooth(0.02, 0.1, p)).toFixed(3);
       lede.style.opacity = (1 - smooth(0.05, 0.2, p)).toFixed(3);
     },

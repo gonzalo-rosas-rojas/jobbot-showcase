@@ -19,10 +19,11 @@ export function createApprove(root) {
     update(p, ctx, _cur, fx) {
       const narrow = ctx && ctx.vw < 760;
       const inn = fx.inn;
-      const out = fx.out;
+      const out = fx.late; // leaves as the sun comes up (act 8 starts growing it at once), not before
       const vis = inn * (1 - out);
       copy.style.opacity = vis.toFixed(3);
-      copy.style.transform = `translate3d(0,${((1 - inn) * 5 - out * 4).toFixed(2)}vh,0)`;
+      // phones: a shorter lift on the way out (the docked dial sits just above the headline)
+      copy.style.transform = `translate3d(0,${((1 - inn) * 5 - out * (narrow ? 1.5 : 4)).toFixed(2)}vh,0)`;
       card.style.opacity = vis.toFixed(3);
       card.style.transform = narrow ? `translate3d(0,${((1 - inn) * 6).toFixed(2)}vh,0)` : `translate3d(0,calc(-50% + ${((1 - inn) * 6).toFixed(2)}vh),0)`;
       card.style.visibility = vis < 0.01 ? "hidden" : "visible";
