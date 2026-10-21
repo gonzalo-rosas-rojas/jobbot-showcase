@@ -77,6 +77,17 @@ Instrument Serif Italic (the one italic word of a headline) and Geist Mono 400 (
 origin and sha256 of every file are in `site/assets/fonts/VENDORED.md`. The system faces the piece used first (Bahnschrift, Palatino,
 Cascadia) stay behind them as fallbacks.
 
-## Status
+## License and hosting
 
-Not published. License and hosting are undecided.
+The code and copy are MIT-licensed (see `LICENSE`); the fonts keep their own OFL licenses.
+
+`.github/workflows/pages.yml` publishes the `site/` folder to GitHub Pages on every push to `main`. Turn it on once under
+Settings, Pages, Source: GitHub Actions. Its actions are pinned to commit SHAs.
+
+## Author
+
+Built by Gonzalo Rosas Rojas, full-stack and AI engineer, Santiago, Chile (remote).
+[linkedin.com/in/gonzalo-rosas-rojas](https://www.linkedin.com/in/gonzalo-rosas-rojas)
+
+The page was designed and written with Claude Code (Anthropic) as a pair-programming partner; the direction, the story and the
+decisions are the author's, and every number on the page is counted from the real code by `scripts/receipts.py`.
