@@ -144,4 +144,4 @@ the story does not feel like arriving in a different app. Same palette, same eas
   frames. One pair stays weak by design: green and red are nearly the same under protanopia in the light theme
   (ΔE 3), so no state relies on colour alone (a "!" and "vencida" for late, a "✓" and "Aprobada" for confirmed).
 - Tested in Chromium only. Safari and Firefox are untested; View Transitions degrade to instant changes.
-- No licence or hosting chosen. The jobbot source is private.
+- MIT licence, hosted on GitHub Pages. The jobbot source is public at https://github.com/GonzaloRosas/jobbot.

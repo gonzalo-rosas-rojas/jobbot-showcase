@@ -15,7 +15,7 @@ opens, read, decide, fill, the machine room, follow, approve, the window closes)
 
 Everything on the page is fictional data. The few numbers about the code (lines, tests, dependencies) are counted
 from the real repository by `scripts/receipts.py`, and the rules on the last screen each point at the file that
-enforces them. The jobbot source is private for now.
+enforces them. The jobbot source is at [GonzaloRosas/jobbot](https://github.com/GonzaloRosas/jobbot).
 
 At the end of the story, **Use the panel** opens the panel (the page a Rust server renders) as a live demo on
 fictional data, growing out of the panel the story was showing. It moves the way the story does (a trip between
