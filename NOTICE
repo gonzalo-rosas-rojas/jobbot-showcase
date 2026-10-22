@@ -1,0 +1,3 @@
+The MIT license in LICENSE covers the code and the writing in this repository.
+
+The fonts under site/assets/fonts are not covered by it. Each one keeps its own SIL Open Font License; the texts are in site/assets/fonts/licenses, and where each file came from is in site/assets/fonts/VENDORED.md.
