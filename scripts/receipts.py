@@ -1,10 +1,12 @@
 """Counts real numbers about the Rust project (read-only) and writes site/data/receipts.json.
 Nothing here names a company or a person: only counts. Run it again before publishing.
-Usage: python scripts/receipts.py [path/to/jobbot/repo]"""
+Usage: python scripts/receipts.py <path/to/jobbot/repo>"""
 import datetime, json, os, re, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-REPO = sys.argv[1] if len(sys.argv) > 1 else "."
+if len(sys.argv) < 2:
+    sys.exit(__doc__)
+REPO = sys.argv[1]
 
 
 def rust_files(sub):
