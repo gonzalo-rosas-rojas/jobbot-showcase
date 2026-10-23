@@ -148,10 +148,10 @@
         </div>
         <dl class="stats mono">
           <div><dt>LINES OF RUST</dt><dd id="r-lines">0</dd></div>
-          <div><dt>TEST FUNCTIONS</dt><dd id="r-tests">0</dd></div>
+          <div><dt>OFFLINE TESTS</dt><dd id="r-tests">0</dd></div>
           <div><dt>DEPENDENCIES</dt><dd id="r-deps">0</dd></div>
         </dl>
-        <p class="note" id="r-note">Counted by scripts/receipts.py: #[test] attributes in src/ and tests/, not a test run.</p>
+        <p class="note" id="r-note">Counted by scripts/receipts.py: #[test] attributes in src/, tests/ and crates/ that run offline, not a test run.</p>
       </div>
       <div class="arch">
         <svg viewBox="0 0 880 440" role="img" aria-label="Architecture: public boards feed discovery, scoring and CV tailoring; then form filling, a gate, a handoff and a person. Under the chain sit a work-hours window, a SQLite tracker and the panel server.">
@@ -168,12 +168,12 @@
           <g class="node "><rect x="0" y="40" width="170" height="64" rx="10"/><text class="n-name" x="16" y="67">boards</text><text class="n-sub" x="16" y="88">public job feeds</text></g>
           <g class="node "><rect x="235" y="40" width="170" height="64" rx="10"/><text class="n-name" x="251" y="67">discovery.rs</text><text class="n-sub" x="251" y="88">dedupe, exclusions</text></g>
           <g class="node "><rect x="470" y="40" width="170" height="64" rx="10"/><text class="n-name" x="486" y="67">scoring.rs</text><text class="n-sub" x="486" y="88">6 factors, 0 to 100</text></g>
-          <g class="node "><rect x="705" y="40" width="170" height="64" rx="10"/><text class="n-name" x="721" y="67">cv.rs</text><text class="n-sub" x="721" y="88">reorder, never add</text></g>
+          <g class="node "><rect x="705" y="40" width="170" height="64" rx="10"/><text class="n-name" x="721" y="67">cv.rs</text><text class="n-sub" x="721" y="88">never adds a skill</text></g>
           <g class="node "><rect x="0" y="196" width="170" height="64" rx="10"/><text class="n-name" x="16" y="223">form.rs</text><text class="n-sub" x="16" y="244">Playwright fills</text></g>
           <g class="node "><rect x="235" y="196" width="170" height="64" rx="10"/><text class="n-name" x="251" y="223">gate.rs</text><text class="n-sub" x="251" y="244">every check first</text></g>
           <g class="node "><rect x="470" y="196" width="170" height="64" rx="10"/><text class="n-name" x="486" y="223">handoff.rs</text><text class="n-sub" x="486" y="244">fills, never sends</text></g>
           <g class="node human"><rect x="705" y="196" width="170" height="64" rx="10"/><text class="n-name" x="721" y="223">a person</text><text class="n-sub" x="721" y="244">confirms the send</text></g>
-          <g class="node under"><rect x="10" y="360" width="250" height="64" rx="10"/><text class="n-name" x="26" y="387">window.rs</text><text class="n-sub" x="26" y="408">nothing runs while I work</text></g>
+          <g class="node under"><rect x="10" y="360" width="250" height="64" rx="10"/><text class="n-name" x="26" y="387">window.rs</text><text class="n-sub" x="26" y="408">quiet in busy hours</text></g>
           <g class="node under"><rect x="315" y="360" width="250" height="64" rx="10"/><text class="n-name" x="331" y="387">tracker.rs</text><text class="n-sub" x="331" y="408">SQLite, 12 states</text></g>
           <g class="node under"><rect x="617" y="360" width="250" height="64" rx="10"/><text class="n-name" x="633" y="387">panel/</text><text class="n-sub" x="633" y="408">tiny_http, the panel you saw</text></g>
           <g class="token" aria-hidden="true"><circle class="token-halo" r="16"/><circle class="token-dot" r="6"/></g>
@@ -188,7 +188,7 @@
       <div class="a6-copy">
         <h2 class="h2" id="h6">Silence<br>is not the end.</h2>
         <p class="sub">Every reply moves an application one step along the line. Ghosted is a state like the others: a late answer can still turn it into a test, an interview or an offer.</p>
-        <p class="note">Demo numbers. The states are the real ones in src/tracker.rs: submitted, replied, technical_test, interview, offer and ghosted.</p>
+        <p class="note">Demo numbers. The states are the real ones in crates/jobbot-domain/src/state.rs: submitted, replied, technical_test, interview, offer and ghosted.</p>
       </div>
       <div class="arch a6-viz">
         <svg viewBox="0 0 900 440" role="img" aria-label="Funnel of 38 applications narrowing to 1 offer across five states, with a ghosted branch that can rejoin the line later.">
@@ -238,10 +238,10 @@
           <li><p>It leaves a blank before it guesses.</p><code>src/form.rs</code></li>
           <li><p>Nothing goes out without the gate, and never on LinkedIn or Upwork.</p><code>src/gate.rs</code></li>
           <li><p>Where a bot would be flagged, it fills the form and I send it.</p><code>src/handoff.rs</code></li>
-          <li><p>It stays quiet while I work.</p><code>src/window.rs</code></li>
+          <li><p>It stays quiet in my busy hours.</p><code>crates/jobbot-domain/src/window.rs</code></li>
         </ol>
         <div class="paper-end">
-          <p class="foot mono">Built with AI assistance. All data on this page is fictional; the counts come from the real code, counted on 2026-10-06. The source is on <a href="https://github.com/GonzaloRosas/jobbot">GitHub</a>.</p>
+          <p class="foot mono">Built with AI assistance. All data on this page is fictional; the counts come from the real code (scripts/receipts.py). The source is on <a href="https://github.com/GonzaloRosas/jobbot">GitHub</a>.</p>
           <button class="cta" type="button" data-try>Use the panel</button>
         </div>
       </div>

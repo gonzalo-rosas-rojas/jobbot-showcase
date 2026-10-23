@@ -1,8 +1,10 @@
 {
- "rust_lines": 44747,
- "rust_files": 68,
- "test_functions": 1007,
- "dependencies": 20,
- "counted_on": "2026-10-06",
- "note": "Counted from src/ and tests/ with scripts/receipts.py; test functions are #[test] and #[tokio::test] attributes, not a test run."
+ "rust_lines": 59918,
+ "rust_files": 81,
+ "test_functions": 1284,
+ "offline_tests": 1175,
+ "ignored_tests": 109,
+ "dependencies": 19,
+ "counted_on": "2026-10-23",
+ "note": "Counted from src/, tests/ and crates/ with scripts/receipts.py; tests are #[test] and #[tokio::test] attributes (offline = not #[ignore]), not a test run; dependencies are the third-party [dependencies] in Cargo.toml."
 }

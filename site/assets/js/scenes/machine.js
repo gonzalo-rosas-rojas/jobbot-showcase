@@ -1,4 +1,4 @@
-// Act 05 · 04:00 · Machine room. The real chain of modules (names taken from src/) is drawn by the scroll:
+// Act 05 · 04:00 · Machine room. The real chain of modules (names taken from src/ and crates/) is drawn by the scroll:
 // each wire strokes in, each node appears, and a gold token (one application) travels the chain to the
 // person at the end. Then the layer under it is drawn, and the counted numbers arrive from
 // data/receipts.json, which scripts/receipts.py writes. Nothing here is a claim the repo can't back.
@@ -58,7 +58,7 @@ export function createMachine(root) {
     .then((r) => (r.ok ? r.json() : null))
     .then((j) => {
       receipts = j;
-      if (j && j.counted_on) note.textContent = `Counted on ${j.counted_on} by scripts/receipts.py: ${j.rust_files} Rust files; tests are #[test] attributes, not a test run.`;
+      if (j && j.counted_on) note.textContent = `Counted on ${j.counted_on} by scripts/receipts.py: ${j.rust_files} Rust files; tests are #[test]s not marked #[ignore], not a test run.`;
     })
     .catch(() => {});
   for (const el of Object.values(out)) el.textContent = "–";
@@ -124,7 +124,7 @@ export function createMachine(root) {
       if (receipts) {
         const k = easeOutExpo(smooth(0.64, 0.86, p));
         out.lines.textContent = fmt(receipts.rust_lines * k);
-        out.tests.textContent = fmt(receipts.test_functions * k);
+        out.tests.textContent = fmt((receipts.offline_tests ?? receipts.test_functions) * k);
         out.deps.textContent = fmt(receipts.dependencies * k);
       }
     },

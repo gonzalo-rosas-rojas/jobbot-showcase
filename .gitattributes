@@ -1,0 +1,2 @@
+# site/demo/index.html is the panel v1 demo build that scripts/build-demo.py copies in as it is: keep it out of the language stats.
+site/demo/index.html linguist-generated=true

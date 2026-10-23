@@ -1,6 +1,8 @@
 # The Night Shift
 
-![The Night Shift, scrolling from the hero to the panel, the five layers and the dawn](docs/hero.gif)
+**Live:** [gonzalorosas.github.io/jobbot-showcase](https://gonzalorosas.github.io/jobbot-showcase/) (desktop or phone)
+
+[![The Night Shift, scrolling from the hero to the panel, the five layers and the dawn](docs/hero.gif)](https://gonzalorosas.github.io/jobbot-showcase/)
 
 A scroll-driven walkthrough of **jobbot**, a Rust program that runs a job search between 18:00 and 09:00: it reads
 public job boards, scores what it finds, tailors a CV, fills the forms, and stops at every point where a person
@@ -44,13 +46,14 @@ here ignores it and stays in Spanish, a build that reads `?lang=` will follow.
 
 ```
 python scripts/receipts.py <path to the jobbot repo>                 # rewrites site/data/receipts.json
-python scripts/build-demo.py <path to panel docs/demo/index.html>    # copies that demo build into site/demo/ as it is
+python scripts/build-demo.py <path to a panel demo build's index.html>  # copies that demo build into site/demo/ as it is
 ```
 
 `build-demo.py` has **no default path on purpose**: the story depends on one specific panel build (the tab buttons the page clicks,
 the elements the overlay looks at for `Esc`), so running it must never switch the piece to another version by accident. Whoever runs it
-says which build it is. The demo build itself comes from the panel's own repository (`node scripts/build-demo.mjs`), which swaps the
-panel's `fetch` calls for an in-page mock with fictional data.
+says which build it is. The demo build itself is made by a script in the panel's development sources, which are not published (the public
+jobbot repository ships only the built page, `src/panel/page.html`); that script swaps the panel's `fetch` calls for an
+in-page mock with fictional data.
 
 ## What is in here
 
@@ -81,8 +84,9 @@ Cascadia) stay behind them as fallbacks.
 
 The code and copy are MIT-licensed (see `LICENSE`); the fonts keep their own OFL licenses.
 
-`.github/workflows/pages.yml` publishes the `site/` folder to GitHub Pages on every push to `main`. Turn it on once under
-Settings, Pages, Source: GitHub Actions. Its actions are pinned to commit SHAs.
+`.github/workflows/pages.yml` publishes the `site/` folder to https://gonzalorosas.github.io/jobbot-showcase/ on every push
+to `main`; its actions are pinned to commit SHAs. A fork publishes the same way once its Settings, Pages, Source is set to
+GitHub Actions.
 
 ## Author
 

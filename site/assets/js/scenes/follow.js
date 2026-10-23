@@ -1,4 +1,4 @@
-// Act 06 · 07:00 · Follow. After the send, an application lives on five real states (src/tracker.rs):
+// Act 06 · 07:00 · Follow. After the send, an application lives on five real states (crates/jobbot-domain/src/state.rs):
 // submitted, replied, technical_test, interview, offer. A gold token walks them one reply at a time while
 // the funnel band narrows (demo numbers: 38, 11, 4, 3, 1). Then the branch the code comments on:
 // ghosted is not terminal, a late answer can move it again.

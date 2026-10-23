@@ -20,8 +20,10 @@ can see move or can find in the code.
 - **Colour has jobs, and they are the panel's.** Gold means "your turn" or the key figure. Mint appears once, on the
   approval that sends. Everything else is a cool blue-tinted neutral on a night that changes hue with the hour. The
   tokens are the panel's own (its *Tinta* theme is this night, its *Papel* theme is the morning on the last
-  screen), so going from the story into the live panel does not change palette. The reasoning and the contrast
-  and colour-blindness checks are in the panel repository's `docs/COLOR.md`.
+  screen), so going from the story into the live panel does not change palette. The reasoning and the
+  colour-blindness checks are in the panel's colour notes, which are not published; the contrast minimums of both
+  themes are a Rust test in jobbot (`both_themes_keep_every_pair_of_colours_legible` in
+  [`src/panel/mod.rs`](https://github.com/GonzaloRosas/jobbot/blob/main/src/panel/mod.rs)).
 - **Motion is tied to scroll or to a data change, never to a timer.** Only `transform`, `opacity` and `clip-path`
   animate. The only loops are the cue under the hero and the cursor blink in the form, and reduced motion stops both.
 - **The big gesture happens once.** Everything before the last act is quiet on purpose so that "HONEST." lands.
@@ -50,8 +52,8 @@ sees is the actual interface and not a mock-up of it.
 | --- | --- | --- | --- |
 | 1 | 18:00 | The bot works the hours I don't. | The window module: nothing automatic runs during busy hours. |
 | 2 | 19:00 | Public boards only. No logins, no keys. | A threshold slider over a labelled sample; the default threshold of 60 is the real one. |
-| 3 | 22:00 | Five layers between an offer and a send. | Posting, score (the real six weights), CV, answers, gate. |
-| 4 | 02:00 | It leaves blanks. It never invents. | The form fills what it can and flags what it can't. |
+| 3 | 22:30 | Five layers between an offer and a send. | Posting, score (the real six weights), CV, answers, gate. |
+| 4 | 02:14 | It leaves blanks. It never invents. | The form fills what it can and flags what it can't. |
 | 5 | 04:00 | One Rust program, on my own PC. | The real module chain; lines, tests and dependencies from `receipts.json`. |
 | 6 | 07:00 | Silence is not the end. | The tracker's twelve states; "ghosted" can return. |
 | 7 | 08:45 | The bot proposes. I approve the first five. | `first_n_reviewed = 5`, `daily_cap = 25`. |
@@ -78,7 +80,7 @@ sees is the actual interface and not a mock-up of it.
   growing with act 8 (`easeInOut` over its first 0.28 of progress, the same curve as before), so it is already
   rising when the last of act 7 is gone. It used to be a 37 vh stretch with nothing but sky and city.
 - **Phones are a stack, not a small desk.** Every collision of the phone version came from laying the desktop composition out in 390 px (the dial under the headline, the panel over the counters, the form over the dial). The phone has its own composition: hero copy on top and the dial under it; headline, counters and slider on top and the panel peeking up under them; the form hanging under the docked dial and the headline under the form. Positions come from measured boxes (`rig.js`, `form.js`, the two diagram scenes), and every phone-only timing or size sits behind `vw < 760` / `max-width: 760px`, so the desktop composition is untouched. Checked with a scan that judges the boxes every 40 px of scroll (copy against dial, panel and its counters; copy against copy of the same act) at 390x844, 430x932, 360x740 and 375x667.
-- **The panel is loaded twice on purpose.** One iframe that travels from the plane to the overlay was tried and does not work without changing the look. A plain move reloads the panel; `Element.moveBefore()` (Chromium 133 and later only) keeps it running, but the same iframe then has to be laid out twice: the plane lays the panel out at 1920x1080 and scales it, the overlay lays it out at the window's size, so at the hand-over the panel visibly reflows inside the rectangle the gesture starts from, and there is nothing left to cross-fade into when the overlay closes. Two copies, the overlay's loaded lazily, keep the gesture as approved. Pictures and numbers: `qa/demo-y-deudas/spike-iframe.mjs`.
+- **The panel is loaded twice on purpose.** One iframe that travels from the plane to the overlay was tried and does not work without changing the look. A plain move reloads the panel; `Element.moveBefore()` (Chromium 133 and later only) keeps it running, but the same iframe then has to be laid out twice: the plane lays the panel out at 1920x1080 and scales it, the overlay lays it out at the window's size, so at the hand-over the panel visibly reflows inside the rectangle the gesture starts from, and there is nothing left to cross-fade into when the overlay closes. Two copies, the overlay's loaded lazily, keep the gesture as approved.
 - **Phones get a camera, not a different diagram.** Redrawing the architecture vertically would be a second
   artwork to maintain. A zoom that follows the token reuses the one drawing and keeps its labels at about 10 px or more.
 - **The live panel is opt-in.** The story never needs a click. A visitor who wants to touch the product can, and
@@ -110,7 +112,7 @@ the story does not feel like arriving in a different app. Same palette, same eas
   in the drawer, the path of one application with the buttons where it stopped; "I approve the first five" becomes
   "confidence" (five boxes and the day's cap). The brief that rules all of them (one view, one question; time and
   progress run left to right; whatever you see you can touch; one colour, one meaning; only real numbers; what is
-  only a simulation says so) is in the panel repository, `docs/superpowers/specs/2026-10-07-del-relato-al-panel-design.md`.
+  only a simulation says so) comes from a design spec that is not published.
   Left for later on purpose: the "honest rules" screen, because it needs counters of what the gate refused that
   nothing stores today.
 - The address follows the section (`#hoy`, `#procesos`, `#procesos/<job>`), so Back closes the drawer first and
@@ -123,10 +125,11 @@ the story does not feel like arriving in a different app. Same palette, same eas
 
 ## Verification
 
-- 35 browser tests drive the panel in real Chromium against a real server and real SQLite files (23 existing, 12
-  new: the fluid layer, the themes, the trip/sun/dial, the approval sequence, and the last day, the path to a send,
-  the threshold, trust and the path of one application). 62 more test the panel's data in Rust. A further Rust test reads the
-  panel's colour tokens and fails if any text pair falls below its contrast minimum in either theme.
+- In the jobbot repository (counted 2026-10-23), 41 browser tests (`tests/panel_browser.rs`) drive the current
+  panel (newer than the v1 build in `site/demo/`) in real Chromium against a real server and real SQLite files in a
+  temp folder; they need Chromium, so they run with `cargo test --test panel_browser -- --ignored --test-threads=1`.
+  139 Rust tests under `src/panel/` cover its server, its data and the page it ships; one of them reads the panel's
+  colour tokens and fails if any text pair falls below its contrast minimum in either theme.
 - Scrolling the whole story at 60 fps: frame times stay at the display rate with a 4× CPU slowdown in headless
   Chromium. That is a smoke test, not a device lab.
 - Console: no errors across the full scroll, desktop and phone width.
