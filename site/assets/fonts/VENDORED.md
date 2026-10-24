@@ -3,7 +3,7 @@
 Three faces, all SIL Open Font License 1.1, served from this folder (`font-src 'self'`, nothing is requested from another host).
 They are the subset woff2 files produced and verified for the sibling project; this repo only **copies** them (no download happened here).
 Origin record, with the pinned commits, the download hashes of the original TTFs, the OTS check and the exact `pyftsubset` commands:
-the `VENDORED.md` kept with the panel's front-end sources, which are not published (generated 2026-10-08 with fonttools 4.66.1, brotli 1.2.0, opentype-sanitizer 9.2.0). Its public part (the pinned commits, the git blobs of the original TTFs, the Unicode ranges, the fonttools and ots versions and these same three subset sha256) is in jobbot's [`THIRD_PARTY_NOTICES.md`](https://github.com/GonzaloRosas/jobbot/blob/main/THIRD_PARTY_NOTICES.md).
+the `VENDORED.md` kept with the panel's front-end sources, which are not published (generated 2026-10-08 with fonttools 4.66.1, brotli 1.2.0, opentype-sanitizer 9.2.0). Its public part (the pinned commits, the git blobs of the original TTFs, the Unicode ranges, the fonttools and ots versions and these same three subset sha256) is in jobbot's [`THIRD_PARTY_NOTICES.md`](https://github.com/gonzalo-rosas-rojas/jobbot/blob/main/THIRD_PARTY_NOTICES.md).
 
 Copied on 2026-10-09. The sha256 below are recalculated here from the files in this folder; they match the "subset" hashes of the origin record.
 

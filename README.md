@@ -1,8 +1,8 @@
 # The Night Shift
 
-**Live:** [gonzalorosas.github.io/jobbot-showcase](https://gonzalorosas.github.io/jobbot-showcase/) (desktop or phone)
+**Live:** [gonzalo-rosas-rojas.github.io/jobbot-showcase](https://gonzalo-rosas-rojas.github.io/jobbot-showcase/) (desktop or phone)
 
-[![The Night Shift, scrolling from the hero to the panel, the five layers and the dawn](docs/hero.gif)](https://gonzalorosas.github.io/jobbot-showcase/)
+[![The Night Shift, scrolling from the hero to the panel, the five layers and the dawn](docs/hero.gif)](https://gonzalo-rosas-rojas.github.io/jobbot-showcase/)
 
 A scroll-driven walkthrough of **jobbot**, a Rust program that runs a job search between 18:00 and 09:00: it reads
 public job boards, scores what it finds, tailors a CV, fills the forms, and stops at every point where a person
@@ -17,7 +17,7 @@ opens, read, decide, fill, the machine room, follow, approve, the window closes)
 
 Everything on the page is fictional data. The few numbers about the code (lines, tests, dependencies) are counted
 from the real repository by `scripts/receipts.py`, and the rules on the last screen each point at the file that
-enforces them. The jobbot source is at [GonzaloRosas/jobbot](https://github.com/GonzaloRosas/jobbot).
+enforces them. The jobbot source is at [gonzalo-rosas-rojas/jobbot](https://github.com/gonzalo-rosas-rojas/jobbot).
 
 At the end of the story, **Use the panel** opens the panel (the page a Rust server renders) as a live demo on
 fictional data, growing out of the panel the story was showing. It moves the way the story does (a trip between
@@ -84,7 +84,7 @@ Cascadia) stay behind them as fallbacks.
 
 The code and copy are MIT-licensed (see `LICENSE`); the fonts keep their own OFL licenses.
 
-`.github/workflows/pages.yml` publishes the `site/` folder to https://gonzalorosas.github.io/jobbot-showcase/ on every push
+`.github/workflows/pages.yml` publishes the `site/` folder to https://gonzalo-rosas-rojas.github.io/jobbot-showcase/ on every push
 to `main`; its actions are pinned to commit SHAs. A fork publishes the same way once its Settings, Pages, Source is set to
 GitHub Actions.
 

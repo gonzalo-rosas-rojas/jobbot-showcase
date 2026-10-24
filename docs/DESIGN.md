@@ -23,7 +23,7 @@ can see move or can find in the code.
   screen), so going from the story into the live panel does not change palette. The reasoning and the
   colour-blindness checks are in the panel's colour notes, which are not published; the contrast minimums of both
   themes are a Rust test in jobbot (`both_themes_keep_every_pair_of_colours_legible` in
-  [`src/panel/mod.rs`](https://github.com/GonzaloRosas/jobbot/blob/main/src/panel/mod.rs)).
+  [`src/panel/mod.rs`](https://github.com/gonzalo-rosas-rojas/jobbot/blob/main/src/panel/mod.rs)).
 - **Motion is tied to scroll or to a data change, never to a timer.** Only `transform`, `opacity` and `clip-path`
   animate. The only loops are the cue under the hero and the cursor blink in the form, and reduced motion stops both.
 - **The big gesture happens once.** Everything before the last act is quiet on purpose so that "HONEST." lands.
@@ -147,4 +147,4 @@ the story does not feel like arriving in a different app. Same palette, same eas
   frames. One pair stays weak by design: green and red are nearly the same under protanopia in the light theme
   (ΔE 3), so no state relies on colour alone (a "!" and "vencida" for late, a "✓" and "Aprobada" for confirmed).
 - Tested in Chromium only. Safari and Firefox are untested; View Transitions degrade to instant changes.
-- MIT licence, hosted on GitHub Pages. The jobbot source is public at https://github.com/GonzaloRosas/jobbot.
+- MIT licence, hosted on GitHub Pages. The jobbot source is public at https://github.com/gonzalo-rosas-rojas/jobbot.
