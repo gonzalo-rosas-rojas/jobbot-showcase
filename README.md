@@ -21,12 +21,12 @@ enforces them. The jobbot source is at [gonzalo-rosas-rojas/jobbot](https://gith
 
 At the end of the story, **Use the panel** opens the panel (the page a Rust server renders) as a live demo on
 fictional data, growing out of the panel the story was showing. It moves the way the story does (a trip between
-sections, a sun from the board's counters) and it has a keyboard layer: `1`-`4` switch section, `J`/`K` move through applications, `Enter` opens
+sections, a sun from the board's counters) and it has a keyboard layer: `1`-`5` switch section, `J`/`K` move through applications, `Enter` opens
 one, `Esc` closes, `?` lists the keys.
 
-**What the embedded demo is.** The panel in `site/demo/` is the **panel v1** build with fictional data: its interface is in Spanish,
-it talks to an in-page mock instead of a server, and it does not read `?lang=`. It is not the current panel. A newer build
-can replace it with `scripts/build-demo.py` (below) when that is decided.
+**What the embedded demo is.** The panel in `site/demo/` is the demo build of the **current panel** with fictional data: it talks
+to an in-page mock instead of a server, and it follows `?lang=es` or `?lang=en` (English when absent). The story moves it between
+sections through its address (`#hoy`, `#cola`). It is replaced with `scripts/build-demo.py` (below).
 
 ## Run it
 
@@ -37,10 +37,9 @@ python scripts/serve.py          # http://127.0.0.1:8790, binds to localhost onl
 ```
 
 Open `http://127.0.0.1:8790/`. The demo panel alone is at `/demo/index.html?scenario=urgent`
-(`calm`, `urgent`, `stop`, `empty` and `window` change the mood of the board). It has two themes that share this
-page's palette: add `&theme=dark` or `&theme=light`, or press `T` inside it (the story asks for the dark one).
-The story itself takes `?lang=es` or `?lang=en` (English when absent) and passes it on to the panel it shows; the v1 panel that ships
-here ignores it and stays in Spanish, a build that reads `?lang=` will follow.
+(`calm`, `urgent`, `stop`, `empty`, `window`, `closed`, `stale` and `heavy` change the mood of the board). It has two themes
+that share this page's palette: add `&theme=dark` or `&theme=light` (the story asks for the dark one).
+The story itself takes `?lang=es` or `?lang=en` (English when absent) and passes it on to the panel it shows.
 
 ## Refresh the inputs
 
@@ -63,7 +62,7 @@ site/assets/css/main.css one stylesheet: tokens, type voices, every act, the nar
 site/assets/js/          engine (scroll), rig (3D panel plane + dial), sky (canvas), try (live demo overlay), lang (?lang= handed to the panel),
                          camera (zoom for the two diagrams: phones, and a window on wide screens), scenes/ (one module per act)
 site/assets/fonts/       the three type voices as subset woff2 files, with their licences and where they came from (VENDORED.md)
-site/demo/               the panel v1 build, with fictional data
+site/demo/               the current panel's demo build, with fictional data
 site/data/receipts.json  the counted numbers
 docs/DESIGN.md           why it looks and moves the way it does
 docs/hero.gif, docs/shot-*.png   the captures at the top of this file

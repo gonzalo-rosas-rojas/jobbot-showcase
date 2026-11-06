@@ -41,9 +41,13 @@ export function createRig({ dialHost, dial, plane, iframe, heroCopy, readCopy })
     if (name === tabNow) return;
     try {
       const doc = iframe.contentDocument;
+      // the v1 panel switches tab with a [data-tab] button; the current panel follows its address (#hoy, #cola, ...)
       const b = doc && doc.querySelector('[data-tab="' + name + '"]');
       if (b) {
         b.click();
+        tabNow = name;
+      } else if (doc && doc.getElementById("app")) {
+        iframe.contentWindow.location.hash = "#" + name;
         tabNow = name;
       }
     } catch (e) {
