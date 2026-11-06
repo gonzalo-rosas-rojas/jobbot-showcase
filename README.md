@@ -47,7 +47,7 @@ lives in `site/assets/js/i18n.js`, as fixed strings applied before the scenes ar
 
 ```
 python scripts/receipts.py <path to the jobbot repo>                 # rewrites site/data/receipts.json
-python scripts/build-demo.py <path to a panel demo build's index.html>  # copies that demo build into site/demo/ as it is
+python scripts/build-demo.py <dir>/index.html   # copies a published demo build (its page and fonts/) into site/demo/ as it is
 ```
 
 `build-demo.py` has **no default path on purpose**: the story depends on one specific panel build (the tab buttons the page clicks,
@@ -64,7 +64,7 @@ site/assets/css/main.css one stylesheet: tokens, type voices, every act, the nar
 site/assets/js/          engine (scroll), rig (3D panel plane + dial), sky (canvas), try (live demo overlay), lang (?lang= handed to the panel), i18n (the Spanish story and the ES | EN switch),
                          camera (zoom for the two diagrams: phones, and a window on wide screens), scenes/ (one module per act)
 site/assets/fonts/       the three type voices as subset woff2 files, with their licences and where they came from (VENDORED.md)
-site/demo/               the current panel's demo build, with fictional data
+site/demo/               the current panel's published demo build, with fictional data, and its fonts/ with their licences
 site/data/receipts.json  the counted numbers
 docs/DESIGN.md           why it looks and moves the way it does
 docs/hero.gif, docs/shot-*.png   the captures at the top of this file
