@@ -3,6 +3,7 @@
 // Everything is generated here so the HTML stays small and the geometry has a single source of truth.
 
 import { clockText } from "./util.js";
+import { t as tr } from "./i18n.js";
 
 const NS = "http://www.w3.org/2000/svg";
 const C = 300; // centre of the 600 x 600 drawing
@@ -42,7 +43,7 @@ function arcPath(r, deg0, deg1) {
 }
 
 export function createDial(host) {
-  const svg = el("svg", { viewBox: "-60 -60 720 720", role: "img", "aria-label": "24-hour dial of the night shift, 18:00 to 09:00" });
+  const svg = el("svg", { viewBox: "-60 -60 720 720", role: "img", "aria-label": tr("dial.aria") });
   svg.classList.add("dial-svg");
   host.appendChild(svg);
 
@@ -69,7 +70,7 @@ export function createDial(host) {
   el("path", { id: "busy-label-path", d: `M${f(polar(R_RING - 22, busy1)[0])} ${f(polar(R_RING - 22, busy1)[1])} A${R_RING - 22} ${R_RING - 22} 0 0 0 ${f(polar(R_RING - 22, busy0)[0])} ${f(polar(R_RING - 22, busy0)[1])}`, fill: "none" }, defs);
   const t = el("text", { class: "dial-micro busy-label", "text-anchor": "middle" }, svg);
   const tp = el("textPath", { href: "#busy-label-path", startOffset: "50%" }, t);
-  tp.textContent = "OCCUPIED  09:00 - 18:00";
+  tp.textContent = tr("dial.busy");
 
   // window rail (the part that lights up as the night goes by)
   el("path", { d: arcPath(R_RING, angleOf(WINDOW_START), angleOf(WINDOW_START) + 225), class: "rail" }, svg);
@@ -120,7 +121,7 @@ export function createDial(host) {
   const time = el("text", { x: C, y: C + 132, class: "dial-time", "text-anchor": "middle" }, svg);
   time.textContent = "18:00";
   const cap = el("text", { x: C, y: C + 166, class: "dial-micro", "text-anchor": "middle" }, svg);
-  cap.textContent = "LOCAL TIME";
+  cap.textContent = tr("dial.local");
 
   let lastRuns = -1;
   let lastText = "";

@@ -1,8 +1,7 @@
 // The story reads ?lang=es|en from its own address and hands it to the panel inside the two iframes (the plane in the
 // story and the "Use the panel" overlay), so a visitor who arrives with ?lang=es gets the Spanish panel and any other
 // value, or none, gets English. Only these two values ever reach the panel's address.
-// Panel builds that read ?lang= (the v2 build does) switch language; the v1 build that ships in site/demo/ does not read
-// it and stays in Spanish, which is harmless: the parameter is ignored.
+// The panel in site/demo/ reads ?lang= and switches language; the story's own text follows the same value (i18n.js).
 
 const SUPPORTED = ["en", "es"];
 export const DEFAULT_LANG = "en";

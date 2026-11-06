@@ -39,7 +39,9 @@ python scripts/serve.py          # http://127.0.0.1:8790, binds to localhost onl
 Open `http://127.0.0.1:8790/`. The demo panel alone is at `/demo/index.html?scenario=urgent`
 (`calm`, `urgent`, `stop`, `empty`, `window`, `closed`, `stale` and `heavy` change the mood of the board). It has two themes
 that share this page's palette: add `&theme=dark` or `&theme=light` (the story asks for the dark one).
-The story itself takes `?lang=es` or `?lang=en` (English when absent) and passes it on to the panel it shows.
+The story itself takes `?lang=es` or `?lang=en` (English when absent) and passes it on to the panel it shows. The **ES | EN**
+switch in the top bar marks the page's language and links to the other one, at the same point of the night. The Spanish text
+lives in `site/assets/js/i18n.js`, as fixed strings applied before the scenes are built: no translation service and no request.
 
 ## Refresh the inputs
 
@@ -59,7 +61,7 @@ in-page mock with fictional data.
 ```
 site/index.html          the eight acts, as plain semantic sections
 site/assets/css/main.css one stylesheet: tokens, type voices, every act, the narrow-screen block
-site/assets/js/          engine (scroll), rig (3D panel plane + dial), sky (canvas), try (live demo overlay), lang (?lang= handed to the panel),
+site/assets/js/          engine (scroll), rig (3D panel plane + dial), sky (canvas), try (live demo overlay), lang (?lang= handed to the panel), i18n (the Spanish story and the ES | EN switch),
                          camera (zoom for the two diagrams: phones, and a window on wide screens), scenes/ (one module per act)
 site/assets/fonts/       the three type voices as subset woff2 files, with their licences and where they came from (VENDORED.md)
 site/demo/               the current panel's demo build, with fictional data

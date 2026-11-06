@@ -362,7 +362,9 @@ html:not(.js) .cap { position: static; opacity: 1; margin-bottom: 12px; }
 
 /* act 08: the window closes — the one peak: the sun comes up out of the dial and the page turns to paper */
 .paper { position: absolute; inset: 0; background: var(--paper); color: var(--paper-ink); clip-path: circle(0px at 90% 10%); padding: clamp(64px, 8vh, 88px) var(--gutter) 24px; display: flex; overflow: hidden; flex-direction: column; will-change: clip-path; }
-.honest { margin: 0; font-family: var(--display); font-weight: 700; font-stretch: 75%; font-variation-settings: "wdth" 75; text-transform: uppercase; font-size: clamp(88px, 28.2vw, 560px); line-height: 0.82; letter-spacing: -0.018em; white-space: nowrap; }
+.honest { margin: 0; font-family: var(--display); font-weight: 700; font-stretch: 75%; font-variation-settings: "wdth" 75; text-transform: uppercase; font-size: calc(clamp(88px, 28.2vw, 560px) * var(--fit, 1)); line-height: 0.82; letter-spacing: -0.018em; white-space: nowrap; }
+/* "HONESTO." is a letter longer than "HONEST.": the same column, a little smaller */
+html[lang="es"] .honest { --fit: 0.94; }
 .honest .ch { padding-bottom: 0.04em; }
 .honest .ch i { animation: none; display: inline-block; will-change: transform; }
 .rules { list-style: none; margin: auto 0 0; padding: 0; }
@@ -383,6 +385,17 @@ html:not(.js) .cap { position: static; opacity: 1; margin-bottom: 12px; }
 .panel-seen .hud-try { opacity: 1; visibility: visible; transform: none; transition-delay: 0s; }
 .hud-try:hover { color: var(--night-0); background: var(--gold); border-color: var(--gold); }
 .on-paper .hud-try, .paper-rising .hud-try { visibility: hidden; opacity: 0; }
+/* the language switch: a plain link to the same page in the other language, there from the first screen */
+/* two halves, ES | EN: the filled one is the language the page is in, the other is the link to switch */
+.hud-lang { pointer-events: auto; display: inline-flex; border: 1px solid var(--line-strong); border-radius: 2px; }
+.hud-lang a { color: var(--text-dim); text-decoration: none; padding: 7px 9px; transition: color 0.2s, background 0.2s; }
+.hud-lang a:hover { color: var(--night-0); background: var(--gold); }
+.hud-lang a[aria-current] { color: var(--night-0); background: var(--text); cursor: default; }
+.hud-lang a:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.on-paper .hud-lang { border-color: var(--paper-ink); }
+.on-paper .hud-lang a { color: var(--paper-dim); }
+.on-paper .hud-lang a:hover { color: var(--paper); background: var(--paper-ink); }
+.on-paper .hud-lang a[aria-current] { color: var(--paper); background: var(--paper-ink); }
 html.try-open { overflow: hidden; }
 .try { position: fixed; inset: 0; z-index: 60; display: grid; grid-template-rows: auto 1fr; background: var(--night-1); clip-path: circle(0px at var(--ox, 50%) var(--oy, 50%)); visibility: hidden; transition: clip-path 0.6s var(--ease-expo), visibility 0s linear 0.6s; }
 .try.is-open { clip-path: circle(150vmax at var(--ox, 50%) var(--oy, 50%)); visibility: visible; transition: clip-path 0.8s var(--ease-expo), visibility 0s; }
@@ -436,7 +449,11 @@ html.try-open { overflow: hidden; }
   .a2-copy { width: auto; right: var(--gutter); top: 150px; }
   .a2-copy .note { display: none; }
   .hud-right #act-label { display: none; }
-  .honest { font-size: 26.4vw; }
+  /* the panel button, the ES | EN switch and the clock share one line on a phone */
+  .hud-right { gap: 10px; }
+  .hud-try { white-space: nowrap; padding: 7px 9px; }
+  .hud-lang a { padding: 7px 7px; }
+  .honest { font-size: calc(26.4vw * var(--fit, 1)); }
   .h2 { font-size: clamp(30px, 9vw, 52px); }
   .sub { display: none; }
   .hud-left span:last-child { display: none; }

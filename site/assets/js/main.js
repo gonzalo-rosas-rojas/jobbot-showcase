@@ -15,7 +15,10 @@ import { createApprove } from "./scenes/approve.js";
 import { createHonest } from "./scenes/honest.js";
 import { createTry } from "./try.js";
 import { withLang } from "./lang.js";
+import { applyLanguage, restoreScroll } from "./i18n.js";
 
+// the page's text in this address's language, before any scene reads it
+applyLanguage();
 document.documentElement.classList.add("js");
 if (reducedMotion()) document.documentElement.classList.add("reduced");
 
@@ -80,6 +83,8 @@ function relayout() {
 }
 window.addEventListener("resize", relayout);
 relayout();
+// coming from the other language: the same point of the night
+if (restoreScroll()) engine.snap();
 // the iframe knows its size only after layout; once the demo has loaded, lay out again
 iframe.addEventListener("load", relayout);
 // the phone layout is measured from the copy's boxes, which move when a web font replaces its fallback: measure again then

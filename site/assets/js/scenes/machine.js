@@ -5,6 +5,7 @@
 
 import { clamp, lerp, smooth, easeOutExpo, track } from "../util.js";
 import { createCamera, createWideCamera, phoneRatio } from "../camera.js";
+import { t as tr } from "../i18n.js";
 
 // when each node appears (scroll progress inside the act); order matches the SVG
 const NODE_AT = [0.05, 0.11, 0.17, 0.23, 0.3, 0.36, 0.42, 0.48, 0.56, 0.6, 0.64];
@@ -58,7 +59,7 @@ export function createMachine(root) {
     .then((r) => (r.ok ? r.json() : null))
     .then((j) => {
       receipts = j;
-      if (j && j.counted_on) note.textContent = `Counted on ${j.counted_on} by scripts/receipts.py: ${j.rust_files} Rust files; tests are #[test]s not marked #[ignore], not a test run.`;
+      if (j && j.counted_on) note.textContent = tr("machine.note", j);
     })
     .catch(() => {});
   for (const el of Object.values(out)) el.textContent = "–";

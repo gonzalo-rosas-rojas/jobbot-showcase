@@ -4,8 +4,9 @@
 // Everything before this scene is quiet on purpose so that this one lands.
 
 import { clamp, lerp, smooth, easeInOut } from "../util.js";
+import { t as tr } from "../i18n.js";
 
-const WORD = "HONEST.";
+const WORD = tr("honest.word");
 
 export function createHonest(root) {
   const paper = root.querySelector(".paper");

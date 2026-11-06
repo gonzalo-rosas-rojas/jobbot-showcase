@@ -3,6 +3,7 @@
 // gate fill one by one (config: first_n_reviewed = 5). Same five squares that sat empty on the gate plate in act 03.
 
 import { clamp, smooth } from "../util.js";
+import { t as tr } from "../i18n.js";
 
 export function createApprove(root) {
   const copy = root.querySelector(".a7-copy");
@@ -33,12 +34,12 @@ export function createApprove(root) {
       btn.style.transform = `scale(${(1 - press * 0.035).toFixed(4)})`;
       const sending = smooth(0.18, 0.32, p);
       bar.style.transform = `scaleX(${sending.toFixed(3)})`;
-      const text = p < 0.18 ? "APPROVE" : p < 0.32 ? "SENDING" : "SENT";
-      if (text !== lastText) {
-        lastText = text;
-        lab.textContent = text;
-        btn.classList.toggle("is-sent", text === "SENT");
-        card.classList.toggle("is-sent", text === "SENT");
+      const state = p < 0.18 ? "idle" : p < 0.32 ? "sending" : "sent";
+      if (state !== lastText) {
+        lastText = state;
+        lab.textContent = tr("approve." + state);
+        btn.classList.toggle("is-sent", state === "sent");
+        card.classList.toggle("is-sent", state === "sent");
       }
 
       // five approvals, one after another
@@ -46,7 +47,7 @@ export function createApprove(root) {
       if (n !== lastCount) {
         lastCount = n;
         squares.forEach((s, i) => s.classList.toggle("on", i < n));
-        label.textContent = n === 5 ? "5 / 5 APPROVED. IT RUNS BY ITSELF NOW." : `APPROVED ${n} / 5`;
+        label.textContent = n === 5 ? tr("approve.done") : tr("approve.count", n);
         label.classList.toggle("is-done", n === 5);
       }
     },
