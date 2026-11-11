@@ -4,7 +4,7 @@
 //   node scripts/media.mjs
 //
 // The three moments are the same as ever: the first screen (18:00), the panel docked next to the copy of the second act (21:06)
-// and the sun rising over the skyline in the last act (08:56). Each is a 1440x900 JPEG of quality 82. Needs Chrome (CHROME_PATH if
+// and the morning paper of the last act with its five rules (09:00). Each is a 1440x900 JPEG of quality 82. Needs Chrome (CHROME_PATH if
 // it is not in a usual place) and no packages.
 //
 // docs/hero.gif is not made here: it is a recording of the scroll, and its name and path must stay (another repository links to
@@ -27,7 +27,7 @@ const QUALITY = 82;
 const MOMENTS = [
   ["shot-hero.jpg", "a1", 0],
   ["shot-panel.jpg", "a2", 0.6],
-  ["shot-dawn.jpg", "a8", 0.115],
+  ["shot-dawn.jpg", "a8", 0.97],
 ];
 
 const server = await serveSite();

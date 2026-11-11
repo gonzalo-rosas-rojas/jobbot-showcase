@@ -381,6 +381,10 @@ html[lang="es"] .honest { --fit: 0.94; }
 :where(html.js) .paper-end { visibility: hidden; }
 .paper-end { display: flex; align-items: flex-end; justify-content: space-between; gap: clamp(20px, 4vw, 64px); margin-top: 18px; }
 .foot { margin-top: 0; max-width: 100ch; color: var(--paper-dim); font-size: 10.5px; line-height: 1.6; letter-spacing: 0.12em; }
+/* links on the paper (each rule's file, the source): the ink of their text, told apart by the underline */
+.paper a { color: inherit; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; transition: color 0.2s; }
+.paper a:hover { color: var(--paper-ink); }
+.paper a:focus-visible { outline-color: var(--paper-ink); }
 .cta { flex: none; display: inline-flex; align-items: center; gap: 14px; padding: 15px 22px 15px 20px; border: 0; border-radius: 2px; background: var(--paper-ink); color: var(--paper); font: 600 17px/1 var(--body); letter-spacing: 0.01em; cursor: pointer; transition: transform 0.35s var(--ease), background 0.2s; }
 .cta::before { content: ""; width: 12px; height: 12px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 0 4px rgba(251, 192, 36, 0.28); transition: transform 0.35s var(--ease); }
 .cta:hover { transform: translate3d(0, -2px, 0); background: #000; }

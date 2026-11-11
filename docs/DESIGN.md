@@ -21,9 +21,10 @@ can see move or can find in the code.
   approval that sends. Everything else is a cool blue-tinted neutral on a night that changes hue with the hour. The
   tokens are the panel's own (its *Tinta* theme is this night, its *Papel* theme is the morning on the last
   screen), so going from the story into the live panel does not change palette. The reasoning and the
-  colour-blindness checks are in the panel's colour notes, which are not published; the contrast minimums of both
-  themes are a Rust test in jobbot (`both_themes_keep_every_pair_of_colours_legible` in
-  [`src/panel/mod.rs`](https://github.com/gonzalo-rosas-rojas/jobbot/blob/main/src/panel/mod.rs)).
+  colour-blindness checks are in the panel's colour notes ([`docs/COLOR.md`](https://github.com/gonzalo-rosas-rojas/jobbot/blob/4028b6e9f203fb3ee07364b79ac81987ccf65d2c/docs/COLOR.md),
+  in Spanish); the contrast minimums of both themes are a Rust test in jobbot
+  (`both_themes_keep_every_pair_of_colours_legible` in
+  [`crates/jobbot-panel/src/lib.rs`](https://github.com/gonzalo-rosas-rojas/jobbot/blob/4028b6e9f203fb3ee07364b79ac81987ccf65d2c/crates/jobbot-panel/src/lib.rs)).
 - **Motion is tied to scroll or to a data change.** Only `transform`, `opacity` and `clip-path` animate. Three things
   run by themselves: the cue under the hero and the cursor blink in the form (CSS loops), and the stars of the sky, which
   twinkle because `sky.js` redraws its canvas every 50 ms while the tab is visible. The headline of the hero also rises

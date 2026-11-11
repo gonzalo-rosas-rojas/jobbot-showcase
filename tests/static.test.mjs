@@ -3,7 +3,8 @@
 
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { readdirSync, readFileSync, statSync } from "node:fs";
+import { spawnSync } from "node:child_process";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join, posix } from "node:path";
 import { describe, it } from "node:test";
 import { jpegSize, pngSize } from "./lib/images.mjs";
@@ -192,6 +193,36 @@ describe("site/data/receipts.json", () => {
 
   it("is consistent: offline tests are the tests that are not ignored", () => {
     assert.equal(receipts.offline_tests, receipts.test_functions - receipts.ignored_tests);
+  });
+});
+
+describe("the code the story cites", () => {
+  // The demo and the cited files are one statement about one version of jobbot: the commit build-demo.py wrote down.
+  const built = readSite("demo/BUILD.txt").match(/^commit: ([0-9a-f]{7,40})$/m)[1];
+  const blob = /https:\/\/github\.com\/gonzalo-rosas-rojas\/jobbot\/blob\/([^/"')\s]+)\/([^"')\s#]+)/g;
+
+  const cited = [html, read("docs/DESIGN.md"), readSite("assets/fonts/VENDORED.md")].flatMap((text) => [...text.matchAll(blob)]);
+  // A clone of jobbot, when there is one: JOBBOT_REPO, or the folder the README's commands assume next to this one.
+  const clone = [process.env.JOBBOT_REPO, join(ROOT, "..", "jobbot-public"), join(ROOT, "..", "jobbot")].find((dir) => dir && existsSync(join(dir, ".git")));
+  const inClone = (...args) => spawnSync("git", ["-C", clone, ...args], { encoding: "utf8" });
+  const hasCommit = Boolean(clone) && inClone("cat-file", "-e", `${built}^{commit}`).status === 0;
+
+  it("links every file of jobbot at the commit the demo was built from", () => {
+    assert.ok(cited.length >= 9, `only ${cited.length} links to files of jobbot`);
+    for (const [link, commit] of cited) {
+      assert.match(commit, /^[0-9a-f]{40}$/, `${link} names a branch, which moves; cite the commit`);
+      assert.ok(commit.startsWith(built), `${link} is not at ${built}, the commit in site/demo/BUILD.txt`);
+    }
+  });
+
+  it("cites files that exist at that commit", { skip: hasCommit ? false : `no clone of jobbot with commit ${built} next to this repository` }, () => {
+    for (const [link, commit, path] of cited) assert.equal(inClone("cat-file", "-e", `${commit}:${path}`).status, 0, `${link}: no such file at that commit`);
+  });
+
+  it("shows, for each of the five rules, the path its link opens", () => {
+    const rules = [...html.matchAll(/<li><p>[^<]+<\/p><code><a href="([^"]+)">([^<]+)<\/a><\/code><\/li>/g)];
+    assert.equal(rules.length, 5);
+    for (const [, href, shown] of rules) assert.ok(href.endsWith(`/${shown}`), `${shown} is shown, ${href} is opened`);
   });
 });
 

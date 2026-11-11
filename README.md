@@ -11,9 +11,9 @@ public job boards, scores what it finds, tailors a CV, fills the forms, and stop
 should decide. The page is the clock: scrolling moves the night from 18:00 to 09:00, through eight acts (the window
 opens, read, decide, fill, the machine room, follow, approve, the window closes).
 
-| The window opens (18:00) | Read: the real panel docked (21:06) | The window closes (08:56) |
+| The window opens (18:00) | Read: the real panel docked (21:06) | The window closes (09:00) |
 |---|---|---|
-| ![Hero](docs/shot-hero.jpg) | ![The panel docked next to the copy](docs/shot-panel.jpg) | ![The sun rising over the skyline](docs/shot-dawn.jpg) |
+| ![Hero](docs/shot-hero.jpg) | ![The panel docked next to the copy](docs/shot-panel.jpg) | ![The last screen: the word Honest and the five rules, each with the file that enforces it](docs/shot-dawn.jpg) |
 
 *The three stills are 1440x900 captures of this page, made by `scripts/media.mjs`. The GIF is a recording of the scroll, 640 px wide at 10 frames a second, about 7 s.*
 
@@ -69,9 +69,9 @@ node scripts/media.mjs                                    # redoes the three sti
 `build-demo.py` has **no default path on purpose**: the story depends on one specific panel build (the tab buttons the page clicks,
 the elements the overlay looks at for `Esc`), so running it must never switch the piece to another version by accident. Whoever runs it
 says which build it is, and gives the commit of the jobbot repository it was made from: the script writes it, with the UTC date of the copy, to
-`site/demo/BUILD.txt`. The demo build itself is made by a script in the panel's development sources, which are not published (the public
-jobbot repository ships only the built page, `src/panel/page.html`); that script swaps the panel's `fetch` calls for an
-in-page mock with fictional data.
+`site/demo/BUILD.txt`. The demo build itself comes from the public jobbot repository: `node scripts/build-demo.mjs` there builds the
+panel from its sources (`panel-src/`) and swaps the panel's `fetch` calls for an in-page mock with fictional data. The files of jobbot
+that the story cites (the five rules of the last screen) are linked at that same commit, and a test fails if the two drift apart.
 
 ## What is in here
 

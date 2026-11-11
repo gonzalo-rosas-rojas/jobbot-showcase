@@ -106,7 +106,7 @@ const ES_DOM = [
   [".a5-copy .stats dt", ["LÍNEAS DE RUST", "PRUEBAS SIN RED", "DEPENDENCIAS"]],
   ["#r-note", "Contado por scripts/receipts.py: atributos #[test] en src/, tests/ y crates/ que corren sin red; no es una ejecución de pruebas."],
   ["#a5 .arch svg", "Arquitectura: los portales públicos alimentan el descubrimiento, el puntaje y la adaptación del CV; luego vienen el llenado del formulario, una compuerta, la entrega y una persona. Bajo la cadena están el horario, un registro en SQLite y el servidor del panel.", "aria-label"],
-  ["#a5 .n-name", ["portales", "discovery.rs", "scoring.rs", "cv.rs", "form.rs", "gate.rs", "handoff.rs", "una persona", "window.rs", "tracker.rs", "panel/"]],
+  ["#a5 .n-name", ["portales", "discovery.rs", "scoring.rs", "cv.rs", "form.rs", "gate.rs", "handoff.rs", "una persona", "window.rs", "tracker.rs", "jobbot-panel"]],
   ["#a5 .n-sub", ["portales públicos", "duplicados, filtros", "6 factores, 0 a 100", "nunca inventa nada", "Playwright llena", "revisa todo antes", "llena, nunca envía", "confirma el envío", "calla en horas ocupadas", "SQLite, 12 estados", "tiny_http, el panel que viste"]],
 
   // 06 follow
