@@ -537,6 +537,17 @@ html:not(.js) .arch { position: static; width: auto; max-width: 860px; margin-to
 html:not(.js) .arch svg { position: static; width: 100%; height: auto; overflow: visible; }
 html:not(.js) .band { clip-path: none; }
 html:not(.js) .paper { position: static; }
+/* The document keeps the night: a still sky that stays dark through the first five acts, lifts in the sixth and reaches
+   first light under the seventh, where the paper of the last act begins (the gradients belong to the acts, so the dawn
+   lands on that edge at any width). Each act opens with its name, the one the top bar shows in the animated page, and
+   the first headline takes the width of the page as it does there. */
+html:not(.js) .act-6 { background: linear-gradient(to bottom, var(--night-0), #1a2038); }
+html:not(.js) .act-7 { background: linear-gradient(to bottom, #1a2038 0%, #2c2a4a 42%, #5a4259 68%, #a8705f 88%, #e2b98f 100%); }
+html:not(.js) .act-7 .stage { padding-bottom: clamp(140px, 26vh, 260px); }
+html:not(.js) .act:not(.act-8) .stage { max-width: 1180px; margin-inline: auto; }
+html:not(.js) .act:not(.act-8)::before { content: attr(data-label); display: block; max-width: 1180px; margin-inline: auto; padding: clamp(28px, 6vh, 56px) var(--gutter) 0; font-family: var(--mono); font-size: 11px; letter-spacing: 0.22em; color: var(--gold); }
+html:not(.js) .act:not(.act-8) .stage { padding-top: clamp(14px, 2.4vh, 22px); }
+html:not(.js) .a1-copy { max-width: none; }
 
 /* ---------- reduced motion: the same document, with the few parts that need scripts ---------- */
 /* What main.js starts in this mode (see boot.js) and so is shown again: the panel button and the ES | EN switch in the top

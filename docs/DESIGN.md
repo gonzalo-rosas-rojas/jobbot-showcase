@@ -148,7 +148,7 @@ the story does not feel like arriving in a different app. Same palette, same eas
 A visitor who asks for it (`prefers-reduced-motion: reduce`) does not get a quieter version of the journey. Motion tied to
 the scroll is still motion, and a panel that flies and turns in 3D is the kind that causes vertigo. They get the story as
 the document the page already is without JavaScript: the eight acts one after the other, each as tall as its text, with
-no planes flying, no sky, no dial and no counters running up.
+no planes flying, no moving sky, no dial and no counters running up.
 
 - **One decision, once, before the first paint.** `assets/js/boot.js` puts `still` on `<html>` where the animated page gets
   `js`. The stylesheet's rules for the page without scripts are written `html:not(.js)`, so the same rules cover both
@@ -162,6 +162,12 @@ no planes flying, no sky, no dial and no counters running up.
   the plane is never requested.
 - **What the preference does not change:** the text, colours and fonts. The overlay still opens, with no transition.
 - The clock and the act label of the top bar are hidden here: they follow the scroll and say nothing in a document.
+  Each act opens with that label instead (its `data-label`, written by the stylesheet), so the document keeps the
+  story's chapters.
+- **The document keeps the night, still.** The canvas sky is off, and plain gradients take its place: dark through the
+  first five acts, lifting in the sixth, first light under the seventh. The gradients belong to the acts, so the dawn
+  meets the paper of the last act at any width. The first headline takes the width of the page, as in the animated
+  one, and the acts sit in one centred column.
 - The preference is read on load. If it changes while the page is open nothing is redone; the `prefers-reduced-motion`
   branches that remain in `engine.js`, `sky.js` and `hero.js` only matter then.
 
