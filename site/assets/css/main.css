@@ -4,7 +4,7 @@
    Rules the whole sheet follows (from the study of 25 design reels, see docs/DESIGN.md):
    - one accent (gold = "your turn" / the key datum), everything else is cool neutral on a night with a hue
    - three type voices: condensed display, one italic serif word per headline, mono for instruments
-   - one idea per screen, ~30 words at most; motion is tied to scroll or to a data change, never to a timer
+   - one idea per screen, ~30 words at most; motion is tied to scroll or to a data change (the stars twinkle on a timer, see docs/DESIGN.md)
    - only transform, opacity and clip-path are animated */
 
 /* The three voices are own files now (OFL 1.1, see assets/fonts/VENDORED.md); the system fonts the piece used before stay behind them in the stacks.
@@ -63,10 +63,11 @@ p { margin: 0; }
 .rig { position: fixed; inset: 0; z-index: 2; pointer-events: none; overflow: hidden; perspective: 1900px; perspective-origin: 50% 36%; }
 .plane {
   position: absolute; left: 50%; top: 50%; width: 1920px; height: 1080px; margin: -540px 0 0 -960px;
-  transform-origin: 50% 50%; will-change: transform, opacity; opacity: 0; visibility: hidden;
+  transform-origin: 50% 50%; will-change: transform, opacity;
   border-radius: 22px; overflow: hidden; background: #0b1015;
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1), 0 70px 180px rgba(0, 0, 0, 0.7), 0 0 140px rgba(110, 150, 255, 0.12);
 }
+:where(html.js) .plane { opacity: 0; visibility: hidden; }
 .plane iframe { width: 100%; height: 100%; border: 0; display: block; background: #0b1015; pointer-events: none; }
 .plane-sheen { position: absolute; inset: 0; pointer-events: none; background: linear-gradient(115deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0) 30%, rgba(255, 255, 255, 0) 64%, rgba(255, 255, 255, 0.04) 100%); }
 
@@ -152,7 +153,8 @@ p { margin: 0; }
 
 /* Type voices: condensed caps and mono are the machine; the italic serif is only ever Gonza speaking. */
 /* the beat while the panel rises */
-.beat { position: absolute; left: var(--gutter); top: clamp(96px, 16vh, 170px); width: min(34vw, 520px); opacity: 0; will-change: transform, opacity; }
+.beat { position: absolute; left: var(--gutter); top: clamp(96px, 16vh, 170px); width: min(34vw, 520px); will-change: transform, opacity; }
+:where(html.js) .beat { opacity: 0; }
 .beat-title { font-family: var(--display); font-weight: 700; font-stretch: 75%; font-variation-settings: "wdth" 75; text-transform: uppercase; font-size: clamp(34px, 4.6vw, 84px); line-height: 0.92; margin-bottom: 2.4vh; }
 .beat-title .serif { font-size: 1.05em; }
 .beat-sub { color: var(--text-dim); line-height: 1.6; max-width: 40ch; font-size: clamp(14px, 1.05vw, 17px); }
@@ -185,7 +187,7 @@ p { margin: 0; }
 /* act 03: decide — five glass plates, exploded, with readable labels outside the 3D */
 .a3-copy { position: absolute; left: var(--gutter); top: clamp(92px, 14vh, 150px); width: min(32vw, 480px); will-change: transform, opacity; }
 .steps { list-style: none; margin: 3.4vh 0 0; padding: 0; position: relative; min-height: 20vh; }
-.steps li { position: absolute; left: 0; right: 0; top: 0; opacity: 0; will-change: opacity; }
+:where(html.js) .steps li { position: absolute; left: 0; right: 0; top: 0; opacity: 0; will-change: opacity; }
 .steps b { display: block; color: var(--gold); margin-bottom: 12px; }
 .steps p { color: var(--text); font-size: clamp(15px, 1.25vw, 20px); line-height: 1.5; max-width: 34ch; }
 .pips { display: flex; gap: 6px; margin-top: 2.2vh; }
@@ -261,7 +263,7 @@ p { margin: 0; }
 .tags li.on { color: var(--text); }
 .tags li.on span { color: var(--gold); }
 
-html:not(.js) .steps li { position: static; opacity: 1; margin-bottom: 18px; }
+html:not(.js) .steps li { margin-bottom: 18px; }
 
 
 /* act 04: fill — a form typed by scroll, two honest blanks */
@@ -298,15 +300,16 @@ html:not(.js) .steps li { position: static; opacity: 1; margin-bottom: 18px; }
 /* act 05: machine room — the real module chain, drawn as you scroll, with counted numbers */
 .a5-copy { position: absolute; left: var(--gutter); top: clamp(92px, 14vh, 150px); width: min(34vw, 520px); will-change: transform, opacity; }
 .caps { position: relative; min-height: 15vh; margin-bottom: 1.4vh; }
-.cap { position: absolute; left: 0; right: 0; top: 0; max-width: 38ch; color: var(--text); font-size: clamp(15px, 1.2vw, 19px); line-height: 1.5; opacity: 0; will-change: opacity; }
-html:not(.js) .cap { position: static; opacity: 1; margin-bottom: 12px; }
-.a5-copy .stats { opacity: 0; }
-.a5-copy .note { opacity: 0; }
+.cap { max-width: 38ch; color: var(--text); font-size: clamp(15px, 1.2vw, 19px); line-height: 1.5; }
+:where(html.js) .cap { position: absolute; left: 0; right: 0; top: 0; opacity: 0; will-change: opacity; }
+html:not(.js) .cap { margin-bottom: 12px; }
+:where(html.js) .a5-copy .stats, :where(html.js) .a5-copy .note { opacity: 0; }
 .arch { position: absolute; left: 44vw; top: 50%; width: min(52vw, 860px); transform: translate3d(0, -50%, 0); will-change: opacity; }
 .arch svg { display: block; width: 100%; height: auto; overflow: visible; }
-.wire { stroke: var(--text-dim); stroke-width: 1.6; stroke-dasharray: 1; stroke-dashoffset: 1; }
+.wire { stroke: var(--text-dim); stroke-width: 1.6; }
+:where(html.js) .wire { stroke-dasharray: 1; stroke-dashoffset: 1; }
 .wire.under { stroke: var(--text-faint); stroke-width: 1.2; }
-.node { opacity: 0; }
+:where(html.js) .node { opacity: 0; }
 .node rect { fill: rgba(14, 20, 36, 0.86); stroke: var(--line-strong); stroke-width: 1.2; }
 .node.human rect { stroke: var(--gold); stroke-dasharray: 6 5; }
 .node.human .n-name { fill: var(--gold); }
@@ -321,8 +324,9 @@ html:not(.js) .cap { position: static; opacity: 1; margin-bottom: 12px; }
 .a6-copy { position: absolute; left: var(--gutter); top: clamp(92px, 14vh, 150px); width: min(34vw, 500px); will-change: transform, opacity; }
 .a6-copy .sub { max-width: 38ch; font-size: clamp(15px, 1.2vw, 19px); color: var(--text); }
 .band { fill: rgba(233, 239, 247, 0.09); stroke: var(--line-strong); stroke-width: 1.2; }
-.spine { fill: none; stroke: var(--text-faint); stroke-width: 1.2; stroke-dasharray: 1; stroke-dashoffset: 1; }
-.stop { opacity: 0; }
+.spine { fill: none; stroke: var(--text-faint); stroke-width: 1.2; }
+:where(html.js) .spine { stroke-dasharray: 1; stroke-dashoffset: 1; }
+:where(html.js) .stop { opacity: 0; }
 .stop-ring { fill: var(--night-1); stroke: var(--text-dim); stroke-width: 2; }
 .stop.is-hit .stop-ring { fill: var(--gold); stroke: var(--gold); }
 .num { font: 700 56px var(--display); font-stretch: 75%; fill: var(--text); font-variant-numeric: tabular-nums; }
@@ -330,10 +334,12 @@ html:not(.js) .cap { position: static; opacity: 1; margin-bottom: 12px; }
 .state { font: 600 12.5px var(--mono); letter-spacing: 0.16em; fill: var(--text-dim); }
 .node.ghost rect { stroke-dasharray: 6 5; }
 .node.ghost .n-name { fill: var(--text-dim); }
-.wire.ghost-out { stroke: var(--gold); stroke-dasharray: 1; }
+.wire.ghost-out { stroke: var(--gold); }
+:where(html.js) .wire.ghost-out { stroke-dasharray: 1; }
 .wire.ghost-in { stroke: var(--text-faint); }
-.ghost-head { fill: var(--gold); opacity: 0; }
-.ghost-label { font: 600 11.5px var(--mono); letter-spacing: 0.16em; fill: var(--gold); opacity: 0; }
+.ghost-head { fill: var(--gold); }
+.ghost-label { font: 600 11.5px var(--mono); letter-spacing: 0.16em; fill: var(--gold); }
+:where(html.js) .ghost-head, :where(html.js) .ghost-label { opacity: 0; }
 
 
 /* act 07: approve — the one place a human speaks (italic serif), and the one place mint appears */
@@ -361,7 +367,8 @@ html:not(.js) .cap { position: static; opacity: 1; margin-bottom: 12px; }
 .five-label.is-done { color: var(--mint); }
 
 /* act 08: the window closes — the one peak: the sun comes up out of the dial and the page turns to paper */
-.paper { position: absolute; inset: 0; background: var(--paper); color: var(--paper-ink); clip-path: circle(0px at 90% 10%); padding: clamp(64px, 8vh, 88px) var(--gutter) 24px; display: flex; overflow: hidden; flex-direction: column; will-change: clip-path; }
+.paper { position: absolute; inset: 0; background: var(--paper); color: var(--paper-ink); padding: clamp(64px, 8vh, 88px) var(--gutter) 24px; display: flex; overflow: hidden; flex-direction: column; will-change: clip-path; }
+:where(html.js) .paper { clip-path: circle(0px at 90% 10%); }
 .honest { margin: 0; font-family: var(--display); font-weight: 700; font-stretch: 75%; font-variation-settings: "wdth" 75; text-transform: uppercase; font-size: calc(clamp(88px, 28.2vw, 560px) * var(--fit, 1)); line-height: 0.82; letter-spacing: -0.018em; white-space: nowrap; }
 /* "HONESTO." is a letter longer than "HONEST.": the same column, a little smaller */
 html[lang="es"] .honest { --fit: 0.94; }
@@ -371,7 +378,8 @@ html[lang="es"] .honest { --fit: 0.94; }
 .rules li { display: grid; grid-template-columns: 1fr auto; align-items: baseline; gap: 24px; padding: 13px 0; border-top: 1px solid rgba(19, 31, 53, 0.22); will-change: transform, opacity; }
 .rules p { font-size: clamp(17px, 1.7vw, 27px); line-height: 1.25; max-width: 62ch; }
 .rules code { font: 600 13px var(--mono); letter-spacing: 0.06em; color: var(--paper-dim); white-space: nowrap; }
-.paper-end { visibility: hidden; display: flex; align-items: flex-end; justify-content: space-between; gap: clamp(20px, 4vw, 64px); margin-top: 18px; }
+:where(html.js) .paper-end { visibility: hidden; }
+.paper-end { display: flex; align-items: flex-end; justify-content: space-between; gap: clamp(20px, 4vw, 64px); margin-top: 18px; }
 .foot { margin-top: 0; max-width: 100ch; color: var(--paper-dim); font-size: 10.5px; line-height: 1.6; letter-spacing: 0.12em; }
 .cta { flex: none; display: inline-flex; align-items: center; gap: 14px; padding: 15px 22px 15px 20px; border: 0; border-radius: 2px; background: var(--paper-ink); color: var(--paper); font: 600 17px/1 var(--body); letter-spacing: 0.01em; cursor: pointer; transition: transform 0.35s var(--ease), background 0.2s; }
 .cta::before { content: ""; width: 12px; height: 12px; border-radius: 50%; background: var(--gold); box-shadow: 0 0 0 4px rgba(251, 192, 36, 0.28); transition: transform 0.35s var(--ease); }
@@ -381,7 +389,8 @@ html[lang="es"] .honest { --fit: 0.94; }
 .cta:focus-visible { outline-color: var(--paper-ink); outline-offset: 4px; }
 
 /* "Use the panel": a button in the HUD once the panel has appeared, and a full-screen live copy of it */
-.hud-try { pointer-events: auto; font: inherit; letter-spacing: inherit; text-transform: inherit; color: var(--text); background: rgba(6, 8, 14, 0.35); border: 1px solid var(--line-strong); border-radius: 2px; padding: 7px 12px; cursor: pointer; opacity: 0; visibility: hidden; transform: translate3d(0, -4px, 0); transition: opacity 0.4s var(--ease), transform 0.4s var(--ease), color 0.2s, background 0.2s, border-color 0.2s, visibility 0s linear 0.4s; }
+.hud-try { pointer-events: auto; font: inherit; letter-spacing: inherit; text-transform: inherit; color: var(--text); background: rgba(6, 8, 14, 0.35); border: 1px solid var(--line-strong); border-radius: 2px; padding: 7px 12px; cursor: pointer; transition: opacity 0.4s var(--ease), transform 0.4s var(--ease), color 0.2s, background 0.2s, border-color 0.2s, visibility 0s linear 0.4s; }
+:where(html.js) .hud-try { opacity: 0; visibility: hidden; transform: translate3d(0, -4px, 0); }
 .panel-seen .hud-try { opacity: 1; visibility: visible; transform: none; transition-delay: 0s; }
 .hud-try:hover { color: var(--night-0); background: var(--gold); border-color: var(--gold); }
 .on-paper .hud-try, .paper-rising .hud-try { visibility: hidden; opacity: 0; }
@@ -504,6 +513,29 @@ html.try-open { overflow: hidden; }
   .try-close kbd { display: none; }
   .hud-try { padding: 6px 9px; }
 }
+
+/* ---------- without JavaScript ---------- */
+/* assets/js/boot.js puts the class "js" on <html> before this sheet is read, so everything here applies only when scripts do
+   not run. The story then reads as a document: the eight acts one after the other, each as tall as its text. What only
+   moves with the scroll (and says nothing without it: the sky, the panel on its plane, the dial, the decorative pieces, the
+   counters that start at 0) is left out, and the diagrams are drawn whole. The styles that hide things for the animation
+   are written :where(html.js) ..., so they do not apply here either. */
+.noscript { margin: 0; padding: 14px var(--gutter); background: var(--night-2); border-bottom: 1px solid var(--line); line-height: 1.5; }
+.noscript a { color: var(--gold); }
+html:not(.js) #sky, html:not(.js) .rig, html:not(.js) .dial, html:not(.js) .grain, html:not(.js) .progress, html:not(.js) .try,
+html:not(.js) .hud-right, html:not(.js) .beat, html:not(.js) .cta, html:not(.js) .stack, html:not(.js) .leaders, html:not(.js) .tags,
+html:not(.js) .slider, html:not(.js) .pips, html:not(.js) .form, html:not(.js) .a7-card, html:not(.js) .stats, html:not(.js) .token { display: none; }
+html:not(.js) .hud { position: static; height: auto; padding: 18px var(--gutter) 0; }
+html:not(.js) .act { height: auto; margin-top: 0; }
+html:not(.js) .stage { position: static; height: auto; overflow: visible; padding: clamp(40px, 8vh, 72px) var(--gutter); }
+html:not(.js) .act-8 .stage { padding: 0; }
+html:not(.js) :is(.a1-copy, .a2-copy, .a3-copy, .a4-copy, .a5-copy, .a6-copy, .a7-copy) { position: static; width: auto; max-width: 62ch; }
+html:not(.js) .sub, html:not(.js) .note { display: block; }
+html:not(.js) .steps, html:not(.js) .caps { min-height: 0; }
+html:not(.js) .arch { position: static; width: auto; max-width: 860px; margin-top: 3vh; transform: none; overflow: visible; -webkit-mask-image: none; mask-image: none; }
+html:not(.js) .arch svg { position: static; width: 100%; height: auto; overflow: visible; }
+html:not(.js) .band { clip-path: none; }
+html:not(.js) .paper { position: static; }
 
 /* ---------- reduced motion: no letter ritual, no looping cue ---------- */
 @media (prefers-reduced-motion: reduce) {

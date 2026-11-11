@@ -16,6 +16,7 @@ export function createHonest(root) {
   const html = document.documentElement;
 
   // the word, one clipped letter at a time (the plain text stays for screen readers via aria-label)
+  h.textContent = "";
   const letters = [...WORD].map((c) => {
     const outer = document.createElement("span");
     outer.className = "ch";

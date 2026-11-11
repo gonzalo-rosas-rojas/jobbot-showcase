@@ -12,10 +12,29 @@
 <link rel="preload" href="assets/fonts/barlow-condensed-700.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="assets/fonts/instrument-serif-400italic.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="assets/fonts/geist-mono-400.woff2" as="font" type="font/woff2" crossorigin>
+<script src="assets/js/boot.js"></script>
 <link rel="stylesheet" href="assets/css/main.css">
+<link rel="modulepreload" href="assets/js/camera.js">
+<link rel="modulepreload" href="assets/js/dial.js">
+<link rel="modulepreload" href="assets/js/engine.js">
+<link rel="modulepreload" href="assets/js/i18n.js">
+<link rel="modulepreload" href="assets/js/lang.js">
+<link rel="modulepreload" href="assets/js/rig.js">
+<link rel="modulepreload" href="assets/js/scenes/approve.js">
+<link rel="modulepreload" href="assets/js/scenes/follow.js">
+<link rel="modulepreload" href="assets/js/scenes/form.js">
+<link rel="modulepreload" href="assets/js/scenes/hero.js">
+<link rel="modulepreload" href="assets/js/scenes/honest.js">
+<link rel="modulepreload" href="assets/js/scenes/layers.js">
+<link rel="modulepreload" href="assets/js/scenes/machine.js">
+<link rel="modulepreload" href="assets/js/scenes/read.js">
+<link rel="modulepreload" href="assets/js/sky.js">
+<link rel="modulepreload" href="assets/js/try.js">
+<link rel="modulepreload" href="assets/js/util.js">
 <script type="module" src="assets/js/main.js"></script>
 </head>
 <body>
+<noscript><p class="noscript">The animated version of this page needs JavaScript, so what follows is its text without the animation. The <a href="demo/index.html?scenario=urgent&amp;theme=dark">demo panel</a> needs JavaScript too; the <a href="https://github.com/gonzalo-rosas-rojas/jobbot-showcase">source of this page</a> is on GitHub.</p></noscript>
 <a class="skip" href="#main">Skip to content</a>
 
 <canvas id="sky" aria-hidden="true"></canvas>
@@ -232,7 +251,7 @@
   <section class="act act-8" id="a8" data-scene="honest" data-from="14.917" data-to="15" data-label="THE WINDOW CLOSES" aria-labelledby="h8">
     <div class="stage">
       <div class="paper">
-        <h2 class="honest" id="h8" aria-label="Honest."></h2>
+        <h2 class="honest" id="h8" aria-label="Honest.">Honest.</h2>
         <ol class="rules">
           <li><p>It never invents a skill.</p><code>src/cv.rs</code></li>
           <li><p>It leaves a blank before it guesses.</p><code>src/form.rs</code></li>
