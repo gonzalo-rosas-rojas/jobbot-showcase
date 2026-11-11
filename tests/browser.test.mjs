@@ -177,7 +177,10 @@ describe("with the preference for reduced motion", { skip }, () => {
   // Jumps down the page and reports how far act 2's progress is from where the scroll position puts it, at its worst over
   // the second to fifth frames (the first frame can still show the old position: the page learns of a scroll in that frame).
   const lagBehindScroll = async (page) => {
-    await page.scrollTo(await actTop(page, "a2")); // act 2 is on screen and has settled
+    // the page snaps to the scroll position once when the panel has loaded; the jump must come after that
+    await page.waitFor(`(() => { const f = document.querySelector("#plane iframe"); return f.getAttribute("src") && f.contentDocument.body?.children.length > 0; })()`, "the panel to load");
+    await page.scrollTo(await actTop(page, "a2"));
+    await page.waitFor(`parseFloat(document.getElementById("a2").style.getPropertyValue("--p")) === 0`, "act 2 to settle at its start");
     return page.eval(`new Promise((done) => {
       const act = document.getElementById("a2");
       const top = act.getBoundingClientRect().top + scrollY;
