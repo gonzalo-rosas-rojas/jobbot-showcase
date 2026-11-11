@@ -6,6 +6,7 @@ import { createHash } from "node:crypto";
 import { readdirSync, readFileSync } from "node:fs";
 import { join, posix } from "node:path";
 import { describe, it } from "node:test";
+import { jpegSize, pngSize } from "./lib/images.mjs";
 import { SITE, fromFile, importSpecifiers, moduleGraph, read, readSite, sizeOf, startTags } from "./lib/site.mjs";
 
 // The most the first load may weigh (HTML, stylesheet, the page's own scripts and fonts), in bytes. It is what the page
@@ -37,7 +38,8 @@ function cssUrls(text) {
 function htmlResources() {
   const refs = [];
   for (const { name, attrs } of tags) {
-    if (name === "link" && attrs.href && !attrs.href.startsWith("data:")) refs.push(attrs.href);
+    // canonical and alternate name the page itself (absolute on purpose); they are not something the page fetches
+    if (name === "link" && attrs.href && !attrs.href.startsWith("data:") && !["canonical", "alternate"].includes(attrs.rel)) refs.push(attrs.href);
     if (["script", "img", "source", "iframe", "embed"].includes(name) && attrs.src) refs.push(attrs.src);
     if (name === "iframe" && attrs["data-src"]) refs.push(attrs["data-src"]);
   }
@@ -207,5 +209,57 @@ describe("the first load", () => {
     const bootScripts = tags.filter((t) => t.name === "script" && t.attrs.src && t.attrs.type !== "module").map((t) => t.attrs.src);
     const weight = [...new Set([...files, ...bootScripts])].reduce((sum, f) => sum + sizeOf(f), 0);
     assert.ok(weight <= FIRST_LOAD_BUDGET_BYTES, `the first load weighs ${weight} bytes; the budget is ${FIRST_LOAD_BUDGET_BYTES}`);
+  });
+});
+
+describe("the preview when the address is shared", () => {
+  const CANONICAL = "https://gonzalo-rosas-rojas.github.io/jobbot-showcase/";
+  const meta = (key, value) => tags.find((t) => t.name === "meta" && t.attrs[key] === value)?.attrs.content;
+  const link = (rel, extra = {}) => tags.find((t) => t.name === "link" && t.attrs.rel === rel && Object.entries(extra).every(([k, v]) => t.attrs[k] === v))?.attrs.href;
+  const title = html.match(/<title>([^<]*)<\/title>/)[1];
+  const description = meta("name", "description");
+
+  it("has every Open Graph and Twitter tag, none of them empty", () => {
+    for (const property of ["og:type", "og:site_name", "og:title", "og:description", "og:url", "og:image", "og:image:width", "og:image:height", "og:image:alt", "og:locale", "og:locale:alternate"]) {
+      assert.ok(meta("property", property), `${property} is missing or empty`);
+    }
+    for (const name of ["twitter:card", "twitter:title", "twitter:description", "twitter:image"]) assert.ok(meta("name", name), `${name} is missing or empty`);
+    assert.equal(meta("property", "og:type"), "website");
+    assert.equal(meta("name", "twitter:card"), "summary_large_image");
+  });
+
+  it("names the page's address, in its two languages, with absolute links", () => {
+    assert.equal(link("canonical"), CANONICAL);
+    assert.equal(meta("property", "og:url"), CANONICAL);
+    assert.equal(link("alternate", { hreflang: "en" }), CANONICAL);
+    assert.equal(link("alternate", { hreflang: "es" }), CANONICAL + "?lang=es");
+    assert.equal(link("alternate", { hreflang: "x-default" }), CANONICAL);
+  });
+
+  it("repeats the page's own title and the start of its description", () => {
+    assert.equal(meta("property", "og:title"), title);
+    assert.equal(meta("name", "twitter:title"), title);
+    for (const text of [meta("property", "og:description"), meta("name", "twitter:description")]) {
+      assert.ok(text.length <= 200, "a preview description is a sentence, not the whole paragraph");
+      assert.ok(description.startsWith(text), "the preview description is not the start of the page's description");
+    }
+  });
+
+  it("points at an image that exists: an absolute address, a 1200x630 JPEG under 300 KB", () => {
+    const image = meta("property", "og:image");
+    assert.equal(meta("name", "twitter:image"), image);
+    assert.ok(image.startsWith(CANONICAL), "og:image is not an absolute address under the page's own");
+    const file = image.slice(CANONICAL.length);
+    const data = readFileSync(join(SITE, file));
+    assert.deepEqual(jpegSize(data), { width: 1200, height: 630 });
+    assert.equal(meta("property", "og:image:width"), "1200");
+    assert.equal(meta("property", "og:image:height"), "630");
+    assert.ok(data.length < 300 * 1024, `${file} weighs ${data.length} bytes`);
+  });
+
+  it("has an iOS home-screen icon of 180x180 pixels", () => {
+    const href = link("apple-touch-icon");
+    assert.ok(href, "no apple-touch-icon");
+    assert.deepEqual(pngSize(readFileSync(join(SITE, href))), { width: 180, height: 180 });
   });
 });

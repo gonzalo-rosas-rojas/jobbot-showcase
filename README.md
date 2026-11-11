@@ -50,6 +50,7 @@ lives in `site/assets/js/i18n.js`, as fixed strings applied before the scenes ar
 ```
 python scripts/receipts.py <path to the jobbot repo>                 # rewrites site/data/receipts.json
 python scripts/build-demo.py <dir>/index.html <commit>   # copies a published demo build (its page and fonts/) into site/demo/ as it is
+node scripts/og-image.mjs                                 # redoes the link preview (site/assets/og.jpg) and the iOS icon from the first screen; needs Chrome
 ```
 
 `build-demo.py` has **no default path on purpose**: the story depends on one specific panel build (the tab buttons the page clicks,
