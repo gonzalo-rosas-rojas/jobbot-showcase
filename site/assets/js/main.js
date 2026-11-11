@@ -1,6 +1,6 @@
 // Boot: build the fixed layers, wire the acts to the engine, keep the HUD honest.
 
-import { clockText, reducedMotion } from "./util.js";
+import { QA, clockText, reducedMotion } from "./util.js";
 import { createDial } from "./dial.js";
 import { createSky } from "./sky.js";
 import { createRig } from "./rig.js";
@@ -19,7 +19,7 @@ import { applyLanguage, restoreScroll } from "./i18n.js";
 
 // the page's text in this address's language, before any scene reads it
 applyLanguage();
-document.documentElement.classList.add("js");
+// (the "js" class on <html> is set by boot.js, before the stylesheet, so the first frame is already the scripted page)
 if (reducedMotion()) document.documentElement.classList.add("reduced");
 
 const SCENES = { hero: createHero, read: createRead, layers: createLayers, form: createForm, machine: createMachine, follow: createFollow, approve: createApprove, honest: createHonest };
@@ -27,8 +27,23 @@ const SCENES = { hero: createHero, read: createRead, layers: createLayers, form:
 const dialHost = document.getElementById("dial");
 const plane = document.getElementById("plane");
 const iframe = plane.querySelector("iframe");
-// the panel on the plane starts loading here (not from the HTML) so that ?lang= of this address reaches it in the one request
-iframe.src = withLang(iframe.dataset.src);
+
+// The panel on the plane weighs more than the rest of the page together and is not on screen until the hero has been
+// scrolled a little (rig.js starts fading it in at u 0.12). So it does not compete with the page's own files: it starts
+// once the page has loaded and painted and the browser is idle, or sooner if the visitor scrolls toward it. The address
+// is set here, not in the HTML, so that ?lang= of this address reaches the panel in its one request.
+const PANEL_NEAR = 0.03; // the story position (act index + progress) at which the panel starts loading regardless
+let panelStarted = false;
+function startPanel() {
+  if (panelStarted) return;
+  panelStarted = true;
+  iframe.src = withLang(iframe.dataset.src);
+}
+const whenIdle = (fn) => ("requestIdleCallback" in window ? window.requestIdleCallback(fn, { timeout: 1000 }) : window.setTimeout(fn, 300));
+const afterFirstPaint = () => requestAnimationFrame(() => requestAnimationFrame(() => whenIdle(startPanel)));
+if (document.readyState === "complete") afterFirstPaint();
+else window.addEventListener("load", afterFirstPaint, { once: true });
+
 const dial = createDial(dialHost);
 const sky = createSky(document.getElementById("sky"));
 const rig = createRig({ dialHost, dial, plane, iframe, heroCopy: document.querySelector(".a1-copy"), readCopy: document.querySelector(".a2-copy") });
@@ -54,6 +69,7 @@ let panelSeen = false;
 const engine = createEngine({
   acts,
   onFrame(ctx) {
+    if (ctx.u > PANEL_NEAR) startPanel();
     sky.update(ctx.nightT, ctx.sy);
     rig.update(ctx);
     const c = clockText(ctx.nightT);
@@ -86,8 +102,12 @@ relayout();
 // coming from the other language: the same point of the night
 if (restoreScroll()) engine.snap();
 // the iframe knows its size only after layout; once the demo has loaded, lay out again
-iframe.addEventListener("load", relayout);
+iframe.addEventListener("load", () => {
+  if (!iframe.getAttribute("src")) return; // the empty document every iframe starts with is not the panel
+  rig.setReady(true);
+  relayout();
+});
 // the phone layout is measured from the copy's boxes, which move when a web font replaces its fallback: measure again then
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(relayout);
-// a hook for screenshots and tests: jump to a scroll position with no smoothing
-window.__night = { snap: () => engine.snap(), rig, tryPanel };
+// a hook for screenshots and tests, only when the address says ?qa=1: jump to a scroll position with no smoothing
+if (QA) window.__night = { snap: () => engine.snap(), rig, tryPanel };

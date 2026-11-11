@@ -2,7 +2,7 @@
 // build, fictional data) lying on a plane in 3D. Both are positioned from the global act position `u`
 // (act index + local progress), so the camera moves are plain keyframes in one place.
 
-import { clamp, lerp, smooth, track } from "./util.js";
+import { clamp, lerp, qaWarn, smooth, track } from "./util.js";
 
 export function createRig({ dialHost, dial, plane, iframe, heroCopy, readCopy }) {
   let heroSize = 600;
@@ -13,6 +13,7 @@ export function createRig({ dialHost, dial, plane, iframe, heroCopy, readCopy })
   let H = 1080;
   let docked = null;
   let tabNow = "";
+  let ready = false; // the panel has loaded: until then the plane stays hidden, so a visitor never sees it empty
 
   function layout(vw, vh) {
     const narrow = vw < 760;
@@ -51,7 +52,8 @@ export function createRig({ dialHost, dial, plane, iframe, heroCopy, readCopy })
         tabNow = name;
       }
     } catch (e) {
-      /* cross-origin or not loaded yet: harmless, the next frame tries again */
+      // the panel is not reachable (not loaded yet, or served from another origin): the next frame tries again
+      qaWarn("rig: could not switch the panel to " + name, e);
     }
   }
 
@@ -114,7 +116,7 @@ export function createRig({ dialHost, dial, plane, iframe, heroCopy, readCopy })
     const tx = track([[0.14, 0], [0.5, vw * 0.03], [1.0, 0], [1.18, dockTx]], u);
     const ty = track([[0.14, vh * 0.62], [0.5, vh * 0.06], [1.0, 0], [1.18, dockTy]], u);
     // it leaves exactly while act 2's copy does (engine hand-over, 1.912 to 1.956), so the right side is never empty
-    const op = track([[0.12, 0], [0.34, 1], [1.912, 1], [1.956, 0]], uPlane);
+    const op = ready ? track([[0.12, 0], [0.34, 1], [1.912, 1], [1.956, 0]], uPlane) : 0;
     plane.style.opacity = op.toFixed(3);
     plane.style.visibility = op < 0.01 ? "hidden" : "visible";
     plane.style.transform = `translate3d(${tx.toFixed(1)}px,${ty.toFixed(1)}px,0) rotateX(${rx.toFixed(2)}deg) rotateZ(${rz.toFixed(2)}deg) scale(${s.toFixed(4)})`;
@@ -124,5 +126,5 @@ export function createRig({ dialHost, dial, plane, iframe, heroCopy, readCopy })
     else if (u < 2.0) setTab("cola");
   }
 
-  return { layout, update, setTab };
+  return { layout, update, setTab, setReady: (v) => { ready = v; } };
 }

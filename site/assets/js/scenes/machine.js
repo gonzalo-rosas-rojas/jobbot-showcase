@@ -3,7 +3,7 @@
 // person at the end. Then the layer under it is drawn, and the counted numbers arrive from
 // data/receipts.json, which scripts/receipts.py writes. Nothing here is a claim the repo can't back.
 
-import { clamp, lerp, smooth, easeOutExpo, track } from "../util.js";
+import { clamp, lerp, qaWarn, smooth, easeOutExpo, track } from "../util.js";
 import { createCamera, createWideCamera, phoneRatio } from "../camera.js";
 import { t as tr } from "../i18n.js";
 
@@ -56,12 +56,12 @@ export function createMachine(root) {
   // the counted numbers; if the file is missing the figures stay as dashes rather than invented values
   let receipts = null;
   fetch("data/receipts.json")
-    .then((r) => (r.ok ? r.json() : null))
+    .then((r) => (r.ok ? r.json() : Promise.reject(new Error("HTTP " + r.status))))
     .then((j) => {
       receipts = j;
       if (j && j.counted_on) note.textContent = tr("machine.note", j);
     })
-    .catch(() => {});
+    .catch((e) => qaWarn("machine: data/receipts.json is not usable, the counters stay as dashes", e));
   for (const el of Object.values(out)) el.textContent = "–";
 
   return {

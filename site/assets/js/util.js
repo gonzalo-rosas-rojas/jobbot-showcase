@@ -57,3 +57,11 @@ export function clockText(nightT) {
 }
 
 export const reducedMotion = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/** True when the address carries ?qa=1: the testing hook (window.__night) and the development warnings are on. */
+export const QA = new URLSearchParams(window.location.search).get("qa") === "1";
+
+/** console.warn for something the page recovers from on its own but a developer should see; silent for visitors. */
+export const qaWarn = (...args) => {
+  if (QA) console.warn(...args);
+};
