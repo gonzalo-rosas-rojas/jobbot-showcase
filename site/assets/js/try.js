@@ -7,7 +7,8 @@ import { withLang } from "./lang.js";
 
 const html = document.documentElement;
 
-export function createTry() {
+/** `warm: false` loads the panel only when a button is pressed, not when the pointer or the focus reaches it. */
+export function createTry({ warm = true } = {}) {
   const root = document.getElementById("try");
   const frame = root.querySelector(".try-frame");
   const closeBtn = root.querySelector(".try-close");
@@ -90,8 +91,10 @@ export function createTry() {
   openers.forEach((b) => {
     b.addEventListener("click", () => show(b));
     // warm the demo while the pointer approaches, so the click opens something already alive
-    b.addEventListener("pointerenter", load, { once: true });
-    b.addEventListener("focus", load, { once: true });
+    if (warm) {
+      b.addEventListener("pointerenter", load, { once: true });
+      b.addEventListener("focus", load, { once: true });
+    }
   });
   closeBtn.addEventListener("click", close);
   frame.addEventListener("load", watchFrame);

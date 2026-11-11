@@ -27,7 +27,8 @@ can see move or can find in the code.
 - **Motion is tied to scroll or to a data change.** Only `transform`, `opacity` and `clip-path` animate. Three things
   run by themselves: the cue under the hero and the cursor blink in the form (CSS loops), and the stars of the sky, which
   twinkle because `sky.js` redraws its canvas every 50 ms while the tab is visible. The headline of the hero also rises
-  letter by letter once, on load. Reduced motion stops all four (see Verification).
+  letter by letter once, on load. A visitor who asks for reduced motion gets none of this: they get the story as a
+  document (see "Reduced motion" below).
 - **The big gesture happens once.** Everything before the last act is quiet on purpose so that "HONEST." lands.
 - **Fictional on purpose.** Companies, people and offers are invented. Counts about the code are measured.
 
@@ -35,7 +36,7 @@ can see move or can find in the code.
 
 | Layer | What it is |
 | --- | --- |
-| `engine.js` | Reads native scroll, smooths the read position (instant under reduced motion), turns it into a global night position `u` and a local progress `p` per act, and hands each scene `fx` = `{inn, out, late}` for the crossfades (`late` is `out` half a hand-over later; only act 7 uses it). `u` jumps by up to 0.09 when two acts overlap, so anything that must be continuous across a hand-over reads an act's own `p` instead. |
+| `engine.js` | Reads native scroll, smooths the read position, turns it into a global night position `u` and a local progress `p` per act, and hands each scene `fx` = `{inn, out, late}` for the crossfades (`late` is `out` half a hand-over later; only act 7 uses it). `u` jumps by up to 0.09 when two acts overlap, so anything that must be continuous across a hand-over reads an act's own `p` instead. |
 | Acts | Tall `<section>`s with a `position: sticky` stage. Acts 3 to 8 overlap the previous one by 130vh, so there is never an empty screen between two ideas. |
 | `rig.js` | The fixed layers that travel across acts: the real panel on a 3D plane (an iframe of the demo build) and the dial. Keyframes live in one place. The panel carries its own dial and clock, so the story's dial yields while the plane is on screen: it fades over `u` 0.60 to 0.84 and is back in its corner when the plane has left (act 2's own progress 0.93 to 0.99). The docked panel takes the free column to the right of act 2's copy and is never cut (`min(0.8 × fill, column width, free height)`; 0.8 × fill on large screens, smaller on a laptop). It leaves with act 2's copy (progress 0.912 to 0.956), not before. On phones everything is stacked from measured boxes: the hero dial sits under the scroll cue (the end of the hero copy is read from the DOM, so it holds for any phone and any font), and the docked panel peeks up from under act 2's copy (its top edge is 22 px under the copy's last line). The dial also comes back a little later there (progress 0.95 to 1.0), when act 2's copy has gone. |
 | `sky.js` | One canvas: gradient, stars, a seeded skyline whose windows light up and go out. |
@@ -43,7 +44,7 @@ can see move or can find in the code.
 | `camera.js` | Zooms the two diagrams (acts 5 and 6) and follows the action by rewriting the SVG `viewBox`, then pulls back. On phones it is 2× inside the picture's own box. On wide screens (over 760 px wide and at least 600 px tall) the diagram lives in a window to the right of the copy (below the dial, above the city, edges faded) and the camera starts close on the first node and the token, follows the token and ends on the whole picture, so the subject is large at every scroll position instead of a small drawing in an empty sky. Short wide windows keep the plain centred diagram. On phones the window is as tall as the width allows (0.78 of it) unless the copy under the diagram needs the room; on a short phone it gets shorter, down to the picture's own 2:1 shape (`phoneRatio`). |
 | `try.js` | "Use the panel": the demo panel full screen, made `inert` behind it and with the keyboard returned to the button on close. While the panel is on screen in the story, the live copy grows out of that very rectangle (the plane the visitor was just looking at comes forward); anywhere else it grows as a circle from the button, the same gesture as the sun. The overlay's own copy of the panel is loaded lazily (when the pointer or the focus reaches a "Use the panel" button, or on the click), so a visitor who never opens it never pays for a second copy. |
 
-`lang.js` reads `?lang=es|en` from the story's own address (English when it is missing or anything else) and appends it to the address of both copies of the panel, so a panel build that reads it switches language. The v1 build in `site/demo/` does not read it (it is Spanish only), so today the parameter is passed and ignored.
+`lang.js` reads `?lang=es|en` from the story's own address (English when it is missing or anything else) and appends it to the address of both copies of the panel, so the panel opens in the same language as the story. The build in `site/demo/` reads it (a script at the top of its page, before it draws) and keeps Spanish as its own default when it is absent.
 
 The panel is the real product page. Its demo build swaps the server calls for an in-page mock, so what the visitor
 sees is the actual interface and not a mock-up of it.
@@ -127,25 +128,48 @@ the story does not feel like arriving in a different app. Same palette, same eas
 
 ## Verification
 
-- In the jobbot repository (counted 2026-10-23), 41 browser tests (`tests/panel_browser.rs`) drive the current
-  panel (newer than the v1 build in `site/demo/`) in real Chromium against a real server and real SQLite files in a
-  temp folder; they need Chromium, so they run with `cargo test --test panel_browser -- --ignored --test-threads=1`.
-  139 Rust tests under `src/panel/` cover its server, its data and the page it ships; one of them reads the panel's
-  colour tokens and fails if any text pair falls below its contrast minimum in either theme.
+- In the jobbot repository, browser tests (`tests/panel_browser.rs`) drive the panel in real Chromium against a real
+  server and real SQLite files in a temp folder; they need Chromium, so they are marked `#[ignore]` and run on request.
+  Rust tests next to the panel's code cover its server, its data and the page it ships; one of them reads the panel's
+  colour tokens and fails if any text pair falls below its contrast minimum in either theme. This repository states no
+  test counts for that code: the counts on the page are the ones `scripts/receipts.py` measures.
 - Scrolling the whole story at 60 fps: frame times stay at the display rate with a 4× CPU slowdown in headless
   Chromium. That is a smoke test, not a device lab.
 - Console: no errors or warnings across the full scroll in English and Spanish on a desktop, and in English on a phone, with no request to another origin (`tests/browser.test.mjs`, which also fails on the Spanish parity warning of `i18n.js`).
 - Keyboard: only the skip link is focusable at the top; "Use the panel" joins from act 2; the closing screen's
   button is unreachable until it has appeared.
-- Reduced motion, as `tests/browser.test.mjs` checks it: the scroll position is read as it is (no smoothing, `engine.js`); the hero headline is not split into rising letters and no CSS animation runs; the sky is drawn only when the hour changes, so the stars do not twinkle; the live-panel overlay has no transition. Everything tied to the scroll (the panel's plane, the dial, the diagrams, the sun) moves exactly as it does without the preference, and the short fades that follow a change of state are kept. The embedded panel decides for itself and is not covered here.
+- Reduced motion, as `tests/browser.test.mjs` checks it in English and in Spanish: the eight acts are in view one after the other, each as tall as its content; no element has a 3D transform and no CSS animation runs, before or after scrolling; the language switch works; the closing word and the machine room's figures (from `receipts.json`) are written in full; and the panel is not requested until "Use the panel" is pressed. See "Reduced motion" below. The embedded panel decides for itself and is not covered here.
 - Without JavaScript the page is a document: the eight acts one after the other with their text and links, and a note that the animated version needs scripts (`tests/browser.test.mjs`). With scripts, `assets/js/boot.js` marks `<html class="js">` before the stylesheet, and only then do the styles that hide things for the animation apply.
 - Loading: the panel (the demo and its fonts, about 730 KB) is requested after the page's load event and an idle moment, or earlier when the visitor scrolls toward it, and the plane stays hidden until it has loaded.
+- Share preview: `index.html` carries Open Graph and Twitter tags, the canonical address and hreflang links; the 1200x630 card (`site/assets/og.jpg`) is the first frame of the story, and `scripts/og-image.mjs` rebuilds it, with the iOS icon, from the page itself. `tests/static.test.mjs` checks the tags and the image's size from its own header.
+
+## Reduced motion
+
+A visitor who asks for it (`prefers-reduced-motion: reduce`) does not get a quieter version of the journey. Motion tied to
+the scroll is still motion, and a panel that flies and turns in 3D is the kind that causes vertigo. They get the story as
+the document the page already is without JavaScript: the eight acts one after the other, each as tall as its text, with
+no planes flying, no sky, no dial and no counters running up.
+
+- **One decision, once, before the first paint.** `assets/js/boot.js` puts `still` on `<html>` where the animated page gets
+  `js`. The stylesheet's rules for the page without scripts are written `html:not(.js)`, so the same rules cover both
+  cases, and the styles that hide things for the animation (`:where(html.js)`) do not apply. Under `still` only a few
+  rules turn parts back on: the top bar's panel button and ES | EN switch, the closing button, the live-panel overlay and
+  the machine room's figures.
+- **What `main.js` starts in this mode:** the language (`applyLanguage`), the overlay behind "Use the panel" (without
+  warming the panel when the pointer or the focus reaches the button: it is requested on the press), the closing word in
+  the visitor's language, the three counted figures written finished from `receipts.json`, and the scroll position carried
+  over when the language switch is used. It does not start the engine, the sky, the rig or any scene, and the panel on
+  the plane is never requested.
+- **What the preference does not change:** the text, colours and fonts. The overlay still opens, with no transition.
+- The clock and the act label of the top bar are hidden here: they follow the scroll and say nothing in a document.
+- The preference is read on load. If it changes while the page is open nothing is redone; the `prefers-reduced-motion`
+  branches that remain in `engine.js`, `sky.js` and `hero.js` only matter then.
 
 ## Known limits
 
 - The visual level is deliberately *defensible*, not a clone of the best award-site reels: those lean on
   photographic or 3D assets, and this page draws everything in code. Closing that gap needs authored imagery.
-- The demo panel is in Spanish (it is the product's language). The page around it is English. `?lang=` is passed to the panel but the v1 build ignores it.
+- The demo panel's own default is Spanish (it is the product's language); the page around it is English, and `?lang=` is passed on so the two agree.
 - On phones the two diagrams' labels are readable (10 px or more) while the camera follows the token, and small (about 5 px) in the last moment of each act, when it pulls back to show the whole picture. That is the overview, not the reading.
 - The palette is derived from colour theory (OKLCH, WCAG, colour-blind simulation), not matched to the reference
   frames. One pair stays weak by design: green and red are nearly the same under protanopia in the light theme

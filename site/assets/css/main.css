@@ -514,9 +514,10 @@ html.try-open { overflow: hidden; }
   .hud-try { padding: 6px 9px; }
 }
 
-/* ---------- without JavaScript ---------- */
+/* ---------- without JavaScript, or with reduced motion ---------- */
 /* assets/js/boot.js puts the class "js" on <html> before this sheet is read, so everything here applies only when scripts do
-   not run. The story then reads as a document: the eight acts one after the other, each as tall as its text. What only
+   not run, and also when the visitor asks for reduced motion (then boot.js puts "still" there instead, and main.js starts
+   only what moves nothing: see the block after this one). The story then reads as a document: the eight acts one after the other, each as tall as its text. What only
    moves with the scroll (and says nothing without it: the sky, the panel on its plane, the dial, the decorative pieces, the
    counters that start at 0) is left out, and the diagrams are drawn whole. The styles that hide things for the animation
    are written :where(html.js) ..., so they do not apply here either. */
@@ -536,6 +537,17 @@ html:not(.js) .arch { position: static; width: auto; max-width: 860px; margin-to
 html:not(.js) .arch svg { position: static; width: 100%; height: auto; overflow: visible; }
 html:not(.js) .band { clip-path: none; }
 html:not(.js) .paper { position: static; }
+
+/* ---------- reduced motion: the same document, with the few parts that need scripts ---------- */
+/* What main.js starts in this mode (see boot.js) and so is shown again: the panel button and the ES | EN switch in the top
+   bar (not the clock or the act label, which follow the scroll), the closing button, the live panel overlay and the counted
+   figures of the machine room (written once, finished). The counters of the other acts stay out: they only make sense
+   counting up. */
+html.still .hud-right { display: flex; }
+html.still #act-label, html.still #clock { display: none; }
+html.still .cta { display: inline-flex; }
+html.still .try { display: grid; }
+html.still .a5-copy .stats { display: grid; }
 
 /* ---------- reduced motion: no letter ritual, no looping cue ---------- */
 @media (prefers-reduced-motion: reduce) {

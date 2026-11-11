@@ -30,6 +30,32 @@ function onRoute(f) {
   return ROUTE[ROUTE.length - 1];
 }
 
+const fmt = (n) => Math.round(n).toLocaleString("en-US");
+const counters = (root) => ({ lines: root.querySelector("#r-lines"), tests: root.querySelector("#r-tests"), deps: root.querySelector("#r-deps") });
+const testsOf = (j) => j.offline_tests ?? j.test_functions;
+
+/** Reads data/receipts.json, writes the note under the figures and hands the numbers to `then`. */
+function loadReceipts(note, then) {
+  fetch("data/receipts.json")
+    .then((r) => (r.ok ? r.json() : Promise.reject(new Error("HTTP " + r.status))))
+    .then((j) => {
+      if (j && j.counted_on) note.textContent = tr("machine.note", j);
+      then(j);
+    })
+    .catch((e) => qaWarn("machine: data/receipts.json is not usable, the counters stay as dashes", e));
+}
+
+/** With reduced motion nothing counts up: the three figures are written once, finished, and the note under them with them. */
+export function showReceipts(root) {
+  const out = counters(root);
+  for (const el of Object.values(out)) el.textContent = "–";
+  loadReceipts(root.querySelector("#r-note"), (j) => {
+    out.lines.textContent = fmt(j.rust_lines);
+    out.tests.textContent = fmt(testsOf(j));
+    out.deps.textContent = fmt(j.dependencies);
+  });
+}
+
 export function createMachine(root) {
   const copy = root.querySelector(".a5-copy");
   const caps = [...root.querySelectorAll(".cap")];
@@ -50,18 +76,11 @@ export function createMachine(root) {
     roomKey = key;
     if (vw < 760) camera.setRatio(phoneRatio(copy.offsetTop - 12 - arch.offsetTop, arch.offsetWidth));
   };
-  const out = { lines: root.querySelector("#r-lines"), tests: root.querySelector("#r-tests"), deps: root.querySelector("#r-deps") };
-  const fmt = (n) => Math.round(n).toLocaleString("en-US");
+  const out = counters(root);
 
   // the counted numbers; if the file is missing the figures stay as dashes rather than invented values
   let receipts = null;
-  fetch("data/receipts.json")
-    .then((r) => (r.ok ? r.json() : Promise.reject(new Error("HTTP " + r.status))))
-    .then((j) => {
-      receipts = j;
-      if (j && j.counted_on) note.textContent = tr("machine.note", j);
-    })
-    .catch((e) => qaWarn("machine: data/receipts.json is not usable, the counters stay as dashes", e));
+  loadReceipts(note, (j) => { receipts = j; });
   for (const el of Object.values(out)) el.textContent = "–";
 
   return {
@@ -125,7 +144,7 @@ export function createMachine(root) {
       if (receipts) {
         const k = easeOutExpo(smooth(0.64, 0.86, p));
         out.lines.textContent = fmt(receipts.rust_lines * k);
-        out.tests.textContent = fmt((receipts.offline_tests ?? receipts.test_functions) * k);
+        out.tests.textContent = fmt(testsOf(receipts) * k);
         out.deps.textContent = fmt(receipts.dependencies * k);
       }
     },

@@ -5,7 +5,7 @@
 import assert from "node:assert/strict";
 import { after, before, describe, it } from "node:test";
 import { findChrome, launchChrome, until } from "./lib/chrome.mjs";
-import { serveSite } from "./lib/site.mjs";
+import { readSite, serveSite } from "./lib/site.mjs";
 
 const required = process.env.SHOWCASE_REQUIRE_BROWSER === "1";
 const skip = !required && !findChrome() ? "Chrome was not found: set CHROME_PATH to run the browser tests" : false;
@@ -49,6 +49,17 @@ async function walkTheStory(page) {
   for (let y = 0; y < range; y += step) await page.scrollTo(y);
   await page.scrollTo(range);
 }
+
+/** Whether an element can be read: shown, opaque, not clipped away, and inside the width of the screen. (Source of a function, run in the page.) */
+const readable = `(el) => {
+  const r = el.getBoundingClientRect();
+  if (r.width < 1 || r.height < 1 || r.left < -1 || r.right > innerWidth + 1) return false;
+  for (let n = el; n && n !== document.documentElement; n = n.parentElement) {
+    const s = getComputedStyle(n);
+    if (s.display === "none" || s.visibility !== "visible" || parseFloat(s.opacity) < 1 || s.clipPath !== "none") return false;
+  }
+  return true;
+}`;
 
 describe("the story in a browser", { skip }, () => {
   for (const [name, search, size] of [
@@ -163,55 +174,95 @@ describe("with the preference for reduced motion", { skip }, () => {
     await page.close();
   });
 
-  it("leaves the sky as it is until the hour changes", async () => {
-    const page = await open("", { reducedMotion: true });
-    const still = await page.eval(skyPicture);
-    // the absence of a redraw can only be shown by waiting: long enough for ten of the sky's 50 ms ticks
-    await new Promise((r) => setTimeout(r, 500));
-    assert.equal(await page.eval(skyPicture), still);
-    await page.scrollTo(2000);
-    assert.notEqual(await page.eval(skyPicture), still, "the sky should follow the scroll");
-    await page.close();
-  });
+  const fmt = (n) => Math.round(n).toLocaleString("en-US");
+  const receipts = JSON.parse(readSite("data/receipts.json"));
+  const headlines = "#h1, #h2, #h3, #h4, #h5, #h6, #h7, #h8";
 
-  // Jumps down the page and reports how far act 2's progress is from where the scroll position puts it, at its worst over
-  // the second to fifth frames (the first frame can still show the old position: the page learns of a scroll in that frame).
-  const lagBehindScroll = async (page) => {
-    // the page snaps to the scroll position once when the panel has loaded; the jump must come after that
-    await page.waitFor(`(() => { const f = document.querySelector("#plane iframe"); return f.getAttribute("src") && f.contentDocument.body?.children.length > 0; })()`, "the panel to load");
-    await page.scrollTo(await actTop(page, "a2"));
-    await page.waitFor(`parseFloat(document.getElementById("a2").style.getPropertyValue("--p")) === 0`, "act 2 to settle at its start");
-    return page.eval(`new Promise((done) => {
-      const act = document.getElementById("a2");
-      const top = act.getBoundingClientRect().top + scrollY;
-      window.scrollTo(0, top + 1200);
-      const gap = () => {
-        const want = Math.min(1, Math.max(0, (scrollY - top) / (act.offsetHeight - innerHeight)));
-        return Math.abs(parseFloat(act.style.getPropertyValue("--p")) - want);
-      };
-      let frame = 0;
-      let worst = 0;
-      const step = () => {
-        if (++frame > 1) worst = Math.max(worst, gap());
-        if (frame < 5) requestAnimationFrame(step);
-        else done(worst);
-      };
-      requestAnimationFrame(step);
-    })`);
-  };
+  for (const [name, search] of [["English", "?qa=1"], ["Spanish", "?lang=es&qa=1"]]) {
+    describe(`in ${name}`, () => {
+      it("reads as a document: the eight acts one after the other, each with its headline in view and no screens of nothing between", async () => {
+        const page = await open(search, { reducedMotion: true });
+        const acts = await page.eval(`(() => {
+          const readable = ${readable};
+          return [...document.querySelectorAll(".act")].map((act) => {
+            const head = act.querySelector("${headlines}");
+            const end = Math.max(...[...act.querySelectorAll("*")].map((el) => el.getBoundingClientRect().bottom));
+            const box = act.getBoundingClientRect();
+            return { id: act.id, headline: !!head && readable(head), blank: Math.round(box.bottom - end), height: Math.round(box.height) };
+          });
+        })()`);
+        assert.equal(acts.length, 8);
+        for (const { id, headline, blank, height } of acts) {
+          assert.ok(headline, `${id} has no readable headline`);
+          assert.ok(blank <= 200, `${id} ends ${blank} px after its last line`);
+          assert.ok(height < 3000, `${id} is ${height} px tall`);
+        }
+        // nothing is pinned or laid over the text: the page is as tall as the acts and the bar at the top
+        assert.ok((await page.eval(`document.documentElement.scrollHeight`)) < acts.reduce((sum, a) => sum + a.height, 0) + 400);
+        await page.close();
+      });
 
-  it("(control) the page eases toward the scroll position without it", async () => {
-    const page = await open("");
-    assert.ok((await lagBehindScroll(page)) > 0.02);
-    await page.close();
-  });
+      it("has no 3D transform on any element and no CSS animation running, before and after scrolling", async () => {
+        const page = await open(search, { reducedMotion: true });
+        const threeD = `[...document.querySelectorAll("body *")].filter((el) => { const s = getComputedStyle(el); if (s.display === "none") return false; return s.transform.startsWith("matrix3d") || s.perspective !== "none"; }).map((el) => el.tagName + "." + el.className)`;
+        await page.frames(5);
+        assert.deepEqual(await page.eval(threeD), []);
+        assert.deepEqual(await page.eval(runningCssAnimations), []);
+        await walkTheStory(page);
+        assert.deepEqual(await page.eval(threeD), []);
+        assert.deepEqual(await page.eval(runningCssAnimations), []);
+        assert.deepEqual(page.problemLines(), []);
+        await page.close();
+      });
 
-  it("reads the scroll position as it is, with no smoothing", async () => {
-    const page = await open("", { reducedMotion: true });
-    assert.ok((await lagBehindScroll(page)) < 0.001);
-    await page.close();
-  });
+      it("keeps the language switch, in the language of the address", async () => {
+        const page = await open(search, { reducedMotion: true });
+        const lang = search.includes("lang=es") ? "es" : "en";
+        const other = lang === "es" ? "en" : "es";
+        const shown = await page.eval(`(() => { const readable = ${readable}; const a = [...document.querySelectorAll("#lang-switch a")]; return a.every(readable) && a.map((x) => x.dataset.lang + ":" + (x.getAttribute("aria-current") || "") + ":" + new URL(x.href).searchParams.get("lang")).join(" "); })()`);
+        assert.equal(shown, lang === "es" ? "es:page:es en::en" : "es::es en:page:en");
+        assert.equal(await page.eval(`document.documentElement.lang`), lang);
+        await page.eval(`document.querySelector('#lang-switch a[data-lang="${other}"]').click()`);
+        await until(async () => {
+          try { return (await page.eval(`document.documentElement.lang`)) === other && (await page.eval(`document.readyState`)) === "complete"; } catch { return false; } // the old document goes away mid-question
+        }, "the other language to load");
+        assert.match(await page.eval(`document.getElementById("h1").textContent`), other === "es" ? /El bot trabaja/ : /The bot works/);
+        await page.close();
+      });
 
+      it("shows the closing word in the language of the address", async () => {
+        const page = await open(search, { reducedMotion: true });
+        const word = search.includes("lang=es") ? "HONESTO." : "HONEST.";
+        assert.equal(await page.eval(`document.getElementById("h8").textContent.toUpperCase()`), word);
+        await page.close();
+      });
+
+      it("writes the finished figures of the machine room, from receipts.json", async () => {
+        const page = await open(search, { reducedMotion: true });
+        const figures = `["r-lines", "r-tests", "r-deps"].map((id) => document.getElementById(id).textContent)`;
+        await page.waitFor(`${figures}.every((t) => /[0-9]/.test(t))`, "the figures");
+        assert.deepEqual(await page.eval(figures), [fmt(receipts.rust_lines), fmt(receipts.offline_tests), fmt(receipts.dependencies)]);
+        assert.equal(await page.eval(`(${readable})(document.querySelector(".a5-copy .stats"))`), true);
+        await page.close();
+      });
+
+      it("does not ask for the panel until \"Use the panel\" is pressed, and then opens it", async () => {
+        const page = await open(search, { reducedMotion: true });
+        // longer than the idle moment after which the animated page would have started it
+        await new Promise((r) => setTimeout(r, 1500));
+        await page.eval(`document.querySelector(".hud-try").dispatchEvent(new PointerEvent("pointerenter"))`);
+        await page.frames(5);
+        assert.deepEqual(demoRequests(page), [], "the panel was requested with nothing pressed");
+        assert.equal(await page.eval(`(${readable})(document.querySelector(".hud-try"))`), true, "the button is not there to press");
+        await page.eval(`document.querySelector(".hud-try").click()`);
+        await until(() => demoRequests(page).length > 0, "the panel to be requested");
+        assert.equal(demoRequests(page).length, 1);
+        assert.equal(new URL(demoRequests(page)[0].url).searchParams.get("lang"), search.includes("lang=es") ? "es" : "en");
+        await page.waitFor(`document.getElementById("try").classList.contains("is-open")`, "the panel to open");
+        await page.close();
+      });
+    });
+  }
   it("opens the live panel with no transition", async () => {
     const page = await open("", { reducedMotion: true });
     assert.equal(await page.eval(`getComputedStyle(document.getElementById("try")).transitionDuration`), "0s");
@@ -223,16 +274,6 @@ describe("with the preference for reduced motion", { skip }, () => {
 });
 
 describe("without JavaScript", { skip }, () => {
-  /** Whether an element can be read: shown, opaque, not clipped away, and inside the width of the screen. */
-  const readable = `(el) => {
-    const r = el.getBoundingClientRect();
-    if (r.width < 1 || r.height < 1 || r.left < -1 || r.right > innerWidth + 1) return false;
-    for (let n = el; n && n !== document.documentElement; n = n.parentElement) {
-      const s = getComputedStyle(n);
-      if (s.display === "none" || s.visibility !== "visible" || parseFloat(s.opacity) < 1 || s.clipPath !== "none") return false;
-    }
-    return true;
-  }`;
   const story = ".kicker, .lede, .h2, .h7, .sub, .note, .cap, .steps li, .honest, .rules li, .foot";
 
   for (const [name, size] of [["a desktop", DESKTOP], ["a phone", PHONE]]) {

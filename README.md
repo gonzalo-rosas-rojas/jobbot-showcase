@@ -94,8 +94,9 @@ Two groups, both in `tests/`:
   the import graph needs; the first load stays under a weight budget; the demo build record is written correctly.
 - **Browser** (`browser.test.mjs`): a headless Chrome, started with its own temporary profile and no open port, scrolls the whole story in English
   and Spanish (and in English on a phone) and fails on any console error or warning, including a Spanish text that no longer matches the page, and on any
-  request to another origin; checks that the panel is requested only after the page has loaded and is never shown empty; checks what `docs/DESIGN.md`
-  says about reduced motion; and checks that the page reads as a document with JavaScript off. Set `CHROME_PATH` if Chrome is not in a usual place;
+  request to another origin; checks that the panel is requested only after the page has loaded and is never shown empty; checks that with reduced
+  motion the story is the same document as with JavaScript off (no 3D transform, no animation, panel requested only on the button, language switch and
+  figures working); and checks that the page reads as a document with JavaScript off. Set `CHROME_PATH` if Chrome is not in a usual place;
   without Chrome these tests are skipped with a message, and `SHOWCASE_REQUIRE_BROWSER=1` turns that into a failure (the workflow sets it).
 
 The same checks run on every push and pull request (`.github/workflows/checks.yml`), and the site is published only when they pass.
