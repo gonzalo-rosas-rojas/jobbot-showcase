@@ -1,5 +1,7 @@
 # The Night Shift
 
+[![Checks](https://github.com/gonzalo-rosas-rojas/jobbot-showcase/actions/workflows/checks.yml/badge.svg)](https://github.com/gonzalo-rosas-rojas/jobbot-showcase/actions/workflows/checks.yml)
+
 **Live:** [gonzalo-rosas-rojas.github.io/jobbot-showcase](https://gonzalo-rosas-rojas.github.io/jobbot-showcase/) (desktop or phone)
 
 [![The Night Shift, scrolling from the hero to the panel, the five layers and the dawn](docs/hero.gif)](https://gonzalo-rosas-rojas.github.io/jobbot-showcase/)
@@ -47,12 +49,13 @@ lives in `site/assets/js/i18n.js`, as fixed strings applied before the scenes ar
 
 ```
 python scripts/receipts.py <path to the jobbot repo>                 # rewrites site/data/receipts.json
-python scripts/build-demo.py <dir>/index.html   # copies a published demo build (its page and fonts/) into site/demo/ as it is
+python scripts/build-demo.py <dir>/index.html <commit>   # copies a published demo build (its page and fonts/) into site/demo/ as it is
 ```
 
 `build-demo.py` has **no default path on purpose**: the story depends on one specific panel build (the tab buttons the page clicks,
 the elements the overlay looks at for `Esc`), so running it must never switch the piece to another version by accident. Whoever runs it
-says which build it is. The demo build itself is made by a script in the panel's development sources, which are not published (the public
+says which build it is, and gives the commit of the jobbot repository it was made from: the script writes it, with the UTC date of the copy, to
+`site/demo/BUILD.txt`. The demo build itself is made by a script in the panel's development sources, which are not published (the public
 jobbot repository ships only the built page, `src/panel/page.html`); that script swaps the panel's `fetch` calls for an
 in-page mock with fictional data.
 
@@ -66,13 +69,36 @@ site/assets/js/          engine (scroll), rig (3D panel plane + dial), sky (canv
 site/assets/fonts/       the three type voices as subset woff2 files, with their licences and where they came from (VENDORED.md)
 site/demo/               the current panel's published demo build, with fictional data, and its fonts/ with their licences
 site/data/receipts.json  the counted numbers
+tests/                   the checks (below), plain node:test, no packages
 docs/DESIGN.md           why it looks and moves the way it does
 docs/hero.gif, docs/shot-*.png   the captures at the top of this file
 ```
 
 No framework, no CDN, no images: the page ships its own strict Content-Security-Policy
-(`default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; media-src 'self'; frame-src 'self'; font-src 'self'; connect-src 'self'`),
-so it also runs from any static host and asks nothing from any other origin.
+(`default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; media-src 'self'; frame-src 'self'; font-src 'self'; connect-src 'self'; base-uri 'none'; form-action 'none'`),
+so it also runs from any static host and asks nothing from any other origin. The policy is a `<meta>` tag because GitHub Pages does not let a
+repository set response headers; a `<meta>` policy cannot declare `frame-ancestors`, so the page cannot forbid being framed (see `SECURITY.md`).
+
+## Checks
+
+```
+node --test          # from the repository root; Node 20 or later, no packages
+```
+
+Two groups, both in `tests/`:
+
+- **Static** (`static.test.mjs`, `build-demo.test.mjs`): every file the page refers to exists; nothing the page loads comes from another origin; the
+  Content-Security-Policy is the one described above and the markup does not break it (no inline script, `style` attribute or event handler);
+  every font matches the sha256 in `VENDORED.md`; `receipts.json` has the fields the story reads; `index.html` preloads exactly the modules
+  the import graph needs; the first load stays under a weight budget; the demo build record is written correctly.
+- **Browser** (`browser.test.mjs`): a headless Chrome, started with its own temporary profile and no open port, scrolls the whole story in English
+  and Spanish (and in English on a phone) and fails on any console error or warning, including a Spanish text that no longer matches the page, and on any
+  request to another origin; checks that the panel is requested only after the page has loaded and is never shown empty; checks what `docs/DESIGN.md`
+  says about reduced motion; and checks that the page reads as a document with JavaScript off. Set `CHROME_PATH` if Chrome is not in a usual place;
+  without Chrome these tests are skipped with a message, and `SHOWCASE_REQUIRE_BROWSER=1` turns that into a failure (the workflow sets it).
+
+The same checks run on every push and pull request (`.github/workflows/checks.yml`), and the site is published only when they pass.
+Add `?qa=1` to the address to get the testing hook `window.__night` and development warnings in the console.
 
 ## Fonts
 

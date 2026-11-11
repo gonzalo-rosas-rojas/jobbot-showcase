@@ -24,8 +24,10 @@ can see move or can find in the code.
   colour-blindness checks are in the panel's colour notes, which are not published; the contrast minimums of both
   themes are a Rust test in jobbot (`both_themes_keep_every_pair_of_colours_legible` in
   [`src/panel/mod.rs`](https://github.com/gonzalo-rosas-rojas/jobbot/blob/main/src/panel/mod.rs)).
-- **Motion is tied to scroll or to a data change, never to a timer.** Only `transform`, `opacity` and `clip-path`
-  animate. The only loops are the cue under the hero and the cursor blink in the form, and reduced motion stops both.
+- **Motion is tied to scroll or to a data change.** Only `transform`, `opacity` and `clip-path` animate. Three things
+  run by themselves: the cue under the hero and the cursor blink in the form (CSS loops), and the stars of the sky, which
+  twinkle because `sky.js` redraws its canvas every 50 ms while the tab is visible. The headline of the hero also rises
+  letter by letter once, on load. Reduced motion stops all four (see Verification).
 - **The big gesture happens once.** Everything before the last act is quiet on purpose so that "HONEST." lands.
 - **Fictional on purpose.** Companies, people and offers are invented. Counts about the code are measured.
 
@@ -132,10 +134,12 @@ the story does not feel like arriving in a different app. Same palette, same eas
   colour tokens and fails if any text pair falls below its contrast minimum in either theme.
 - Scrolling the whole story at 60 fps: frame times stay at the display rate with a 4× CPU slowdown in headless
   Chromium. That is a smoke test, not a device lab.
-- Console: no errors across the full scroll, desktop and phone width.
+- Console: no errors or warnings across the full scroll in English and Spanish on a desktop, and in English on a phone, with no request to another origin (`tests/browser.test.mjs`, which also fails on the Spanish parity warning of `i18n.js`).
 - Keyboard: only the skip link is focusable at the top; "Use the panel" joins from act 2; the closing screen's
   button is unreachable until it has appeared.
-- Reduced motion: no smoothing, no looping animation, no letter ritual, the overlay opens instantly.
+- Reduced motion, as `tests/browser.test.mjs` checks it: the scroll position is read as it is (no smoothing, `engine.js`); the hero headline is not split into rising letters and no CSS animation runs; the sky is drawn only when the hour changes, so the stars do not twinkle; the live-panel overlay has no transition. Everything tied to the scroll (the panel's plane, the dial, the diagrams, the sun) moves exactly as it does without the preference, and the short fades that follow a change of state are kept. The embedded panel decides for itself and is not covered here.
+- Without JavaScript the page is a document: the eight acts one after the other with their text and links, and a note that the animated version needs scripts (`tests/browser.test.mjs`). With scripts, `assets/js/boot.js` marks `<html class="js">` before the stylesheet, and only then do the styles that hide things for the animation apply.
+- Loading: the panel (the demo and its fonts, about 730 KB) is requested after the page's load event and an idle moment, or earlier when the visitor scrolls toward it, and the plane stays hidden until it has loaded.
 
 ## Known limits
 
