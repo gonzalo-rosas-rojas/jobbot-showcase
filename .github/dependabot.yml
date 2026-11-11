@@ -1,0 +1,7 @@
+# The only thing to keep up to date is the set of pinned GitHub Actions; the site itself has no dependencies.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly

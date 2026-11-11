@@ -1,0 +1,24 @@
+name: Checks
+
+# The tests are in tests/ and need no packages: see "Checks" in the README. The action is pinned to a commit SHA,
+# the same one pages.yml uses; the tag it came from is in the comment.
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      SHOWCASE_REQUIRE_BROWSER: "1"
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      # Node, Python and Chrome come with the runner image; nothing is installed.
+      - run: node --test
