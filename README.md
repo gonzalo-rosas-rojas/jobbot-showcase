@@ -11,11 +11,11 @@ public job boards, scores what it finds, tailors a CV, fills the forms, and stop
 should decide. The page is the clock: scrolling moves the night from 18:00 to 09:00, through eight acts (the window
 opens, read, decide, fill, the machine room, follow, approve, the window closes).
 
-| The window opens (18:00) | Read: the real panel docked (20:45) | The window closes (08:56) |
+| The window opens (18:00) | Read: the real panel docked (21:06) | The window closes (08:56) |
 |---|---|---|
-| ![Hero](docs/shot-hero.png) | ![The panel docked next to the copy](docs/shot-panel.png) | ![The sun rising over the skyline](docs/shot-dawn.png) |
+| ![Hero](docs/shot-hero.jpg) | ![The panel docked next to the copy](docs/shot-panel.jpg) | ![The sun rising over the skyline](docs/shot-dawn.jpg) |
 
-*The GIF and the three stills are captures of this page at 1920x1080 (the GIF is scaled to 960x540, 20 fps, about 7 s of scroll).*
+*The three stills are 1440x900 captures of this page, made by `scripts/media.mjs`. The GIF is a recording of the scroll, 640 px wide at 10 frames a second, about 7 s.*
 
 Everything on the page is fictional data. The few numbers about the code (lines, tests, dependencies) are counted
 from the real repository by `scripts/receipts.py`, and the rules on the last screen each point at the file that
@@ -29,6 +29,16 @@ one, `Esc` closes, `?` lists the keys.
 **What the embedded demo is.** The panel in `site/demo/` is the demo build of the **current panel** with fictional data: it talks
 to an in-page mock instead of a server, and it follows `?lang=es` or `?lang=en` (English when absent). The story moves it between
 sections through its address (`#hoy`, `#cola`). It is replaced with `scripts/build-demo.py` (below).
+
+## What this shows
+
+- **No build and no dependencies.** Static files that run from any host; the tests need only Node. [`tests/static.test.mjs`](tests/static.test.mjs) checks that everything the page loads is its own.
+- **A strict Content-Security-Policy, and its limits.** One policy in a `<meta>` tag that the markup and the scripts never break, and a written account of what a `<meta>` policy cannot do: [`site/index.html`](site/index.html), [`SECURITY.md`](SECURITY.md), the policy tests in [`tests/static.test.mjs`](tests/static.test.mjs).
+- **It works without JavaScript and with reduced motion.** Both get the story as a readable document, not a broken or a quieter animation: [`tests/browser.test.mjs`](tests/browser.test.mjs), [why](docs/DESIGN.md#reduced-motion).
+- **Browser tests with no packages.** A headless Chrome driven over the DevTools protocol on a pipe, with its own profile and no open port: [`tests/lib/chrome.mjs`](tests/lib/chrome.mjs).
+- **Two languages with a parity check.** The Spanish story is fixed strings applied before the scenes are built, and a test fails when the page stops matching them: [`site/assets/js/i18n.js`](site/assets/js/i18n.js), [`tests/browser.test.mjs`](tests/browser.test.mjs).
+- **Fonts of its own, verified.** Three subset faces, each checked against the sha256 recorded with its origin and licence: [`site/assets/fonts/VENDORED.md`](site/assets/fonts/VENDORED.md), [`tests/static.test.mjs`](tests/static.test.mjs).
+- **A measured first load.** The weight of the page, stylesheet, scripts and fonts is capped by a test, and the panel loads only after the page does: [`tests/static.test.mjs`](tests/static.test.mjs), [`tests/browser.test.mjs`](tests/browser.test.mjs).
 
 ## Run it
 
@@ -51,7 +61,10 @@ lives in `site/assets/js/i18n.js`, as fixed strings applied before the scenes ar
 python scripts/receipts.py <path to the jobbot repo>                 # rewrites site/data/receipts.json
 python scripts/build-demo.py <dir>/index.html <commit>   # copies a published demo build (its page and fonts/) into site/demo/ as it is
 node scripts/og-image.mjs                                 # redoes the link preview (site/assets/og.jpg) and the iOS icon from the first screen; needs Chrome
+node scripts/media.mjs                                    # redoes the three stills of this file (docs/shot-*.jpg) from the page; needs Chrome
 ```
+
+`docs/hero.gif` keeps its name and path (another repository links to it). The ffmpeg command that made it lighter is in the header of `scripts/media.mjs`.
 
 `build-demo.py` has **no default path on purpose**: the story depends on one specific panel build (the tab buttons the page clicks,
 the elements the overlay looks at for `Esc`), so running it must never switch the piece to another version by accident. Whoever runs it
@@ -72,7 +85,7 @@ site/demo/               the current panel's published demo build, with fictiona
 site/data/receipts.json  the counted numbers
 tests/                   the checks (below), plain node:test, no packages
 docs/DESIGN.md           why it looks and moves the way it does
-docs/hero.gif, docs/shot-*.png   the captures at the top of this file
+docs/hero.gif, docs/shot-*.jpg   the captures at the top of this file
 ```
 
 No framework, no CDN, no images: the page ships its own strict Content-Security-Policy

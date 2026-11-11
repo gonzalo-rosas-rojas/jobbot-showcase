@@ -3,11 +3,11 @@
 
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
-import { readdirSync, readFileSync } from "node:fs";
+import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, posix } from "node:path";
 import { describe, it } from "node:test";
 import { jpegSize, pngSize } from "./lib/images.mjs";
-import { SITE, fromFile, importSpecifiers, moduleGraph, read, readSite, sizeOf, startTags } from "./lib/site.mjs";
+import { ROOT, SITE, fromFile, importSpecifiers, moduleGraph, read, readSite, sizeOf, startTags } from "./lib/site.mjs";
 
 // The most the first load may weigh (HTML, stylesheet, the page's own scripts and fonts), in bytes. It is what the page
 // weighed when the budget was set, plus 5 %. When a change goes over it, either the change is too heavy or this number
@@ -209,6 +209,20 @@ describe("the first load", () => {
     const bootScripts = tags.filter((t) => t.name === "script" && t.attrs.src && t.attrs.type !== "module").map((t) => t.attrs.src);
     const weight = [...new Set([...files, ...bootScripts])].reduce((sum, f) => sum + sizeOf(f), 0);
     assert.ok(weight <= FIRST_LOAD_BUDGET_BYTES, `the first load weighs ${weight} bytes; the budget is ${FIRST_LOAD_BUDGET_BYTES}`);
+  });
+});
+
+describe("the images of the README", () => {
+  const readme = read("README.md");
+  const images = [...readme.matchAll(/!\[[^\]]*\]\(([^)\s]+)\)/g)].map((m) => m[1]).filter((ref) => !external.test(ref));
+
+  it("exist, and every one the README names is a file of the repository", () => {
+    assert.ok(images.length >= 4, "the check found suspiciously few images");
+    for (const ref of images) assert.ok(statSync(join(ROOT, ref)).size > 0, `README.md refers to ${ref}, which is missing or empty`);
+  });
+
+  it("weigh no more than 2.5 MB each", () => {
+    for (const ref of images) assert.ok(statSync(join(ROOT, ref)).size <= 2.5 * 1024 * 1024, `${ref} weighs ${statSync(join(ROOT, ref)).size} bytes`);
   });
 });
 
