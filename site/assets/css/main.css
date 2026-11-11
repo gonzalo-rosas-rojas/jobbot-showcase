@@ -505,7 +505,7 @@ html.try-open { overflow: hidden; }
   .rules li { grid-template-columns: 1fr; gap: 4px; padding: 9px 0; }
   .rules p { font-size: 15px; }
   .rules code { font-size: 11px; }
-  .foot { font-size: 9px; }
+  .foot { font-size: 11px; }
   .paper-end { flex-direction: column-reverse; align-items: stretch; gap: 12px; }
   .cta { justify-content: center; }
   .try-note { font-size: 12px; }

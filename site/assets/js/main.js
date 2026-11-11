@@ -35,6 +35,7 @@ function startStory() {
   // once the page has loaded and painted and the browser is idle, or sooner if the visitor scrolls toward it. The address
   // is set here, not in the HTML, so that ?lang= of this address reaches the panel in its one request.
   const PANEL_NEAR = 0.03; // the story position (act index + progress) at which the panel starts loading regardless
+  const PANEL_DEADLINE_MS = 4000;
   let panelStarted = false;
   function startPanel() {
     if (panelStarted) return;
@@ -44,7 +45,12 @@ function startStory() {
   const whenIdle = (fn) => ("requestIdleCallback" in window ? window.requestIdleCallback(fn, { timeout: 1000 }) : window.setTimeout(fn, 300));
   const afterFirstPaint = () => requestAnimationFrame(() => requestAnimationFrame(() => whenIdle(startPanel)));
   if (document.readyState === "complete") afterFirstPaint();
-  else window.addEventListener("load", afterFirstPaint, { once: true });
+  else {
+    window.addEventListener("load", afterFirstPaint, { once: true });
+    // A file that never finishes would keep the load event from ever coming, and the panel would never start. This module
+    // runs once the document is parsed, so PANEL_DEADLINE_MS from here the panel starts regardless.
+    window.setTimeout(afterFirstPaint, PANEL_DEADLINE_MS);
+  }
 
   const dial = createDial(dialHost);
   const sky = createSky(document.getElementById("sky"));

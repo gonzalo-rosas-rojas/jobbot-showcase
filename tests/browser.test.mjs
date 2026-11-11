@@ -16,10 +16,11 @@ const PHONE = { width: 390, height: 844 };
 let server;
 let chrome;
 let panelDelayMs = 0; // set by the test that needs the panel to arrive late
+let hungPath = null; // set by the test that needs one file of the page never to finish
 
 before(async () => {
   if (skip) return;
-  server = await serveSite({ slow: (path) => (path === "/demo/index.html" ? panelDelayMs : 0) });
+  server = await serveSite({ slow: (path) => (path === "/demo/index.html" ? panelDelayMs : path === hungPath ? 60000 : 0) });
   chrome = await launchChrome(DESKTOP);
 });
 
@@ -86,6 +87,54 @@ describe("the story in a browser", { skip }, () => {
     await page.close();
   });
 
+  it("marks the closing word as Honest. or Honesto. in the language of the address, with the scenes running and with reduced motion", async () => {
+    for (const [search, word] of [["", "Honest."], ["?lang=es", "Honesto."]]) {
+      for (const reducedMotion of [false, true]) {
+        const page = await open(search, { reducedMotion });
+        assert.equal(await page.eval(`document.getElementById("h8").getAttribute("aria-label")`), word, `${search || "English"}, reduced motion ${reducedMotion}`);
+        await page.close();
+      }
+    }
+  });
+
+  it("warns when a selector of the Spanish list matches nothing, with one text or with many", async () => {
+    const page = await open("?lang=es");
+    const warnings = (without) => page.eval(`(async () => {
+      const { applyLanguage } = await import("/assets/js/i18n.js");
+      const copy = document.implementation.createHTMLDocument("");
+      copy.documentElement.innerHTML = document.documentElement.innerHTML;
+      for (const el of copy.querySelectorAll(${JSON.stringify(without)})) el.remove();
+      const seen = [];
+      const warn = console.warn;
+      console.warn = (...args) => seen.push(args.join(" "));
+      try { applyLanguage(copy); } finally { console.warn = warn; }
+      return seen;
+    })()`);
+    assert.deepEqual(await warnings("#nothing-to-remove"), [], "a complete page warned");
+    const one = await warnings("#h8");
+    assert.equal(one.length, 1);
+    assert.match(one[0], /"#h8" matches 0 element\(s\)/);
+    const many = await warnings(".rules li");
+    assert.ok(many.some((w) => /"\.rules li p" matches 0 element\(s\), 5 text/.test(w)), many.join(" | "));
+    await page.close();
+  });
+
+  it("keeps the footnote of the last act legible on a phone, whole and clear of the button", async () => {
+    const page = await open("", { size: PHONE });
+    await page.waitFor(`document.documentElement.classList.contains("js")`, "the scripts to start");
+    await walkTheStory(page);
+    await page.frames(20);
+    const box = await page.eval(`(() => {
+      const foot = document.querySelector(".foot");
+      const f = foot.getBoundingClientRect();
+      return { size: parseFloat(getComputedStyle(foot).fontSize), top: f.top, bottom: f.bottom, buttonBottom: document.querySelector(".cta").getBoundingClientRect().bottom, height: innerHeight };
+    })()`);
+    assert.ok(box.size >= 11, `the footnote is ${box.size} px`);
+    assert.ok(box.bottom <= box.height, `the footnote ends at ${box.bottom}, below the ${box.height} px screen`);
+    assert.ok(box.top >= box.buttonBottom, "the footnote covers the button");
+    await page.close();
+  });
+
   it("offers the testing hook only when the address says ?qa=1", async () => {
     const plain = await open("");
     assert.equal(await plain.eval(`typeof window.__night`), "undefined");
@@ -115,6 +164,20 @@ describe("loading the panel", { skip }, () => {
 
   // the idle callback is taken away, so only the scroll can start the panel
   const noIdle = (page) => page.send("Page.addScriptToEvaluateOnNewDocument", { source: `window.requestIdleCallback = () => 0;` });
+
+  it("starts it after a few seconds even when the page's load event never comes", async () => {
+    hungPath = "/assets/fonts/geist-mono-400.woff2"; // the page preloads it, so the load event waits for it
+    try {
+      const page = await chrome.newPage(DESKTOP);
+      await page.send("Page.navigate", { url: `${server.origin}/` });
+      await until(() => demoRequests(page).length > 0, "the panel to be requested", { ms: 10000 });
+      assert.equal(page.loadedAt, null, "the page loaded, so this did not test a load event that never comes");
+      assert.equal(await page.eval(`document.readyState`), "interactive");
+      await page.close();
+    } finally {
+      hungPath = null;
+    }
+  });
 
   it("starts it sooner when the visitor scrolls toward it", async () => {
     const page = await open("", { beforeLoad: noIdle });

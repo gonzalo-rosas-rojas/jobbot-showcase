@@ -165,9 +165,10 @@ export function applyLanguage(doc = document) {
     for (const [sel, value, attr] of ES_DOM) {
       const nodes = [...doc.querySelectorAll(sel)];
       const values = Array.isArray(value) ? value : nodes.map(() => value);
-      // a page that no longer matches the list stays in English there rather than getting text in the wrong place
-      if (nodes.length !== values.length) {
-        console.warn(`i18n: "${sel}" matches ${nodes.length} element(s), ${values.length} text(s); left in English`);
+      // a page that no longer matches the list stays in English there rather than getting text in the wrong place; a
+      // selector that matches nothing is the same fault, even when it has a single text
+      if (nodes.length !== values.length || nodes.length === 0) {
+        console.warn(`i18n: "${sel}" matches ${nodes.length} element(s), ${Array.isArray(value) ? value.length : 1} text(s); left in English`);
         continue;
       }
       nodes.forEach((n, i) => put(n, values[i], attr));
