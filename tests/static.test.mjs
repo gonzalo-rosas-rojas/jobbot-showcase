@@ -397,11 +397,11 @@ describe("the phone breakpoint", () => {
     assert.equal(isPhone(phoneWidth - 1), true);
   });
 
-  it("leaves no width that is neither a phone nor wide (the diagrams' camera must be set at every width)", async () => {
+  it("isWide is the complement of isPhone on a tall window", async () => {
     const { isPhone } = await util;
     const { isWide } = await camera;
     for (const vw of [phoneWidth - 1, phoneWidth, phoneWidth + 1]) {
-      assert.ok(isPhone(vw) !== isWide(vw, 900), `at ${vw} px the page is ${isPhone(vw) ? "both" : "neither"}`);
+      assert.ok(isPhone(vw) !== isWide(vw, 900), `at ${vw} px isPhone and isWide agree`);
     }
   });
 });
