@@ -17,7 +17,7 @@ const PANEL_WAIT_MS = 10000; // how long a test waits for the panel to be reques
 const BAR_AND_MARGINS_PX = 400; // what the page may be taller than its acts: the bar at the top and the margins between them
 const PAST_IDLE_START_MS = 1500; // longer than the animated page waits for an idle moment (1000 ms, main.js) before it asks for its panel
 // what Chrome says to a question asked of a document that is being replaced by a navigation
-const NAVIGATING = /Execution context was destroyed|Cannot find context|Inspected target navigated or closed/;
+const NAVIGATING = /Execution context was destroyed|Cannot find context|Cannot find default execution context|Inspected target navigated or closed/;
 const MAX_BLANK_PX = 200; // most an act may leave empty after its last line
 const MAX_ACT_HEIGHT_PX = 3000; // tallest an act may be when it is laid out as a document
 
