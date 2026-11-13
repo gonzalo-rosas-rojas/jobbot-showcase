@@ -2,7 +2,7 @@
 // (18:00 -> 09:00) sweeps over the top and the hours Gonza is busy (09:00 -> 18:00) are hatched at the bottom.
 // Everything is generated here so the HTML stays small and the geometry has a single source of truth.
 
-import { WINDOW_START, clockText } from "./util.js";
+import { WINDOW_END, WINDOW_START, clockText } from "./util.js";
 import { t as tr } from "./i18n.js";
 
 const NS = "http://www.w3.org/2000/svg";
@@ -14,8 +14,7 @@ const R_SWEEP_OUT = R_RING - 54; // outer edge of the sweep behind the hand
 const R_SWEEP_IN = 30;
 const SWEEP_SPAN_DEG = 70; // how far behind the hand the sweep trails
 const FACE_TINT = "#9db4ff"; // the cool surface of the dial face
-const WINDOW_END = 9;
-const WINDOW_HOURS = 15; // 18:00 -> 09:00
+const WINDOW_HOURS = (24 - WINDOW_START + WINDOW_END) % 24; // 18:00 -> 09:00: 15
 const DEG_PER_HOUR = 360 / 24;
 
 const angleOf = (hour) => ((hour % 24) / 24) * 360; // clockwise from the top

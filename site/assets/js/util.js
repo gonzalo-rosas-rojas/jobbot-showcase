@@ -49,6 +49,8 @@ export const pad2 = (n) => String(n).padStart(2, "0");
 
 /** The hour of day (0..23) at which the night shift starts: the dial and the clock both count from it. */
 export const WINDOW_START = 18;
+/** The hour of day at which it ends. */
+export const WINDOW_END = 9;
 
 /** Night time in hours since WINDOW_START (0..15) -> "HH:MM". */
 export function clockText(nightT) {
