@@ -28,7 +28,10 @@ function captured(text, pattern, what) {
   return found[1];
 }
 
-const stripCssComments = (text) => text.replace(/\/\*[\s\S]*?\*\//g, "");
+/** The text without its block comments (the only kind CSS has). */
+const stripBlockComments = (text) => text.replace(/\/\*[\s\S]*?\*\//g, "");
+/** Script source without comments: block ones, and `//` ones whether they start a line or end one (`https://` stays). */
+const stripComments = (text) => stripBlockComments(text).replace(/(^|\s)\/\/.*$/gm, "");
 const external = /^(?:[a-z][a-z0-9+.-]*:)?\/\//i;
 const bare = (ref) => ref.split(/[?#]/)[0];
 const jsFiles = () => moduleGraph(ENTRY);
@@ -36,7 +39,7 @@ const jsFiles = () => moduleGraph(ENTRY);
 /** Every url(...) in the stylesheet that is not a data: URL. */
 function cssUrls(text) {
   const urls = [];
-  for (const m of stripCssComments(text).matchAll(/url\(\s*"([^"]*)"\s*\)|url\(\s*'([^']*)'\s*\)|url\(\s*([^"')\s][^)]*)\)/g)) {
+  for (const m of stripBlockComments(text).matchAll(/url\(\s*"([^"]*)"\s*\)|url\(\s*'([^']*)'\s*\)|url\(\s*([^"')\s][^)]*)\)/g)) {
     const ref = (m[1] ?? m[2] ?? m[3]).trim();
     if (!ref.startsWith("data:")) urls.push(ref);
   }
@@ -99,7 +102,7 @@ describe("what the page may load", () => {
   });
 
   it("holds no @import in the stylesheet", () => {
-    assert.doesNotMatch(stripCssComments(css), /@import/);
+    assert.doesNotMatch(stripBlockComments(css), /@import/);
   });
 });
 
@@ -185,7 +188,6 @@ describe("site/data/receipts.json", () => {
   // the fields the story reads: machine.js for the three counters and i18n.js for the Spanish note
   const readByTheStory = { rust_lines: "machine.js", offline_tests: "machine.js", dependencies: "machine.js", rust_files: "i18n.js", counted_on: "machine.js" };
   const SOURCE_OF = { "machine.js": "assets/js/scenes/machine.js", "i18n.js": "assets/js/i18n.js" };
-  const withoutComments = (text) => text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
 
   it("has every field the story reads, as a count or a date", () => {
     for (const key of Object.keys(readByTheStory)) {
@@ -198,7 +200,7 @@ describe("site/data/receipts.json", () => {
     for (const [key, file] of Object.entries(readByTheStory)) {
       assert.ok(SOURCE_OF[file], `${file} is not a file this check knows how to find`);
       // read as a property of the receipts (j.rust_lines), in code and not in a comment
-      assert.match(withoutComments(readSite(SOURCE_OF[file])), new RegExp(`\\.${key}\\b`), `${file} no longer reads ${key}`);
+      assert.match(stripComments(readSite(SOURCE_OF[file])), new RegExp(`\\.${key}\\b`), `${file} no longer reads ${key}`);
     }
   });
 
@@ -310,7 +312,7 @@ describe("the first load", () => {
   });
 
   it("weighs no more than its budget", () => {
-    const fonts = [...stripCssComments(css).matchAll(/@font-face[^}]*url\(\s*["']?([^"')]+)/g)].map((m) => posix.join("assets/css", m[1]));
+    const fonts = [...stripBlockComments(css).matchAll(/@font-face[^}]*url\(\s*["']?([^"')]+)/g)].map((m) => posix.join("assets/css", m[1]));
     const files = ["index.html", "assets/css/main.css", ...moduleGraph(ENTRY), ...fonts];
     const bootScripts = tags.filter((t) => t.name === "script" && t.attrs.src && t.attrs.type !== "module").map((t) => t.attrs.src);
     const weight = [...new Set([...files, ...bootScripts])].reduce((sum, f) => sum + sizeOf(f), 0);
