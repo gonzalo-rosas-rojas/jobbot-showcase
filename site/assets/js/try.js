@@ -7,12 +7,12 @@ import { withLang } from "./lang.js";
 
 const html = document.documentElement;
 
-/** `warm: false` loads the panel only when a button is pressed, not when the pointer or the focus reaches it. */
 // the story's panel counts as "on screen" when it is at least this big and this opaque
 const MIN_PLANE_W = 120;
 const MIN_PLANE_H = 80;
 const MIN_PLANE_OPACITY = 0.5;
 
+/** `warm: false` loads the panel only when a button is pressed, not when the pointer or the focus reaches it. */
 export function createTry({ warm = true } = {}) {
   const root = document.getElementById("try");
   const frame = root.querySelector(".try-frame");
