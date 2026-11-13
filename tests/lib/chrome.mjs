@@ -83,9 +83,13 @@ export async function launchChrome({ width = 1440, height = 900 } = {}) {
   let nextId = 0;
   const pending = new Map();
   let exitedWith = null; // set when Chrome is gone: what calls made after that are told
-  // a call Chrome never answered because it died would otherwise leave its test waiting for ever
   child.once("exit", (code) => {
     exitedWith = `Chrome exited (code ${code})`;
+  });
+  // A call Chrome never answered because it died would leave its test waiting for ever. They are rejected when the reading
+  // pipe closes, not at "exit": by then every reply Chrome did send has been read (the exit can come before the last data).
+  fromChrome.once("close", () => {
+    exitedWith ??= "Chrome closed its pipe";
     for (const call of pending.values()) call.fail(new Error(`${call.method}: ${exitedWith}`));
     pending.clear();
   });
