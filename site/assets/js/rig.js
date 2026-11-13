@@ -8,12 +8,15 @@ const PANEL_W = 1920; // the size the panel is drawn at inside its iframe, befor
 const PANEL_H = 1080;
 const HUD_H = 56; // the top bar's height (`.hud` in main.css)
 
+const DOCK_TOP = 54; // gap from the top of the window to the docked dial's frame
+const DOCK_MARGIN = 6; // gap between the docked dial and its gutter and top
+
 /** Where the dial sits once docked in the top right corner: its size, the gutter to the window's edge and its centre. */
 export function dockGeometry(vw) {
   const narrow = vw < PHONE_MAX_W;
   const gutter = narrow ? 18 : Math.min(64, vw * 0.042);
   const size = narrow ? 84 : clamp(vw * 0.082, 86, 116);
-  return { gutter, size, x: vw - gutter - size / 2 - 6, y: 54 + size / 2 + 6 };
+  return { gutter, size, x: vw - gutter - size / 2 - DOCK_MARGIN, y: DOCK_TOP + size / 2 + DOCK_MARGIN };
 }
 
 export function createRig({ dialHost, dial, plane, iframe, heroCopy, readCopy }) {
