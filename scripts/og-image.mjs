@@ -12,19 +12,14 @@
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { launchChrome, until } from "../tests/lib/chrome.mjs";
-import { SITE, readSite, serveSite } from "../tests/lib/site.mjs";
+import { SITE, capture, readSite, serveSite } from "../tests/lib/site.mjs";
 
 const CARD = { width: 1200, height: 630, quality: 82 };
 const ICON = { size: 180 };
 
 const html = readSite("index.html");
 
-// the first group of a pattern that must be in index.html; says which one is missing instead of a TypeError on null
-function fromIndex(pattern, what) {
-  const found = html.match(pattern);
-  if (!found) throw new Error(`index.html: ${what} is missing`);
-  return found[1];
-}
+const fromIndex = (pattern, what) => capture(html, pattern, `index.html: ${what}`);
 const favicon = decodeURIComponent(fromIndex(/<link rel="icon" href="data:image\/svg\+xml,([^"]+)"/, '<link rel="icon"> with a data:image/svg+xml href')).replaceAll("'", '"');
 const background = fromIndex(/<meta name="theme-color" content="(#[0-9a-f]{6})"/i, '<meta name="theme-color"> with a #rrggbb colour');
 

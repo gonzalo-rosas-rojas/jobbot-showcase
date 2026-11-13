@@ -12,6 +12,13 @@ export const read = (rel) => readFileSync(join(ROOT, rel), "utf8");
 export const readSite = (rel) => readFileSync(join(SITE, rel), "utf8");
 export const sizeOf = (siteRel) => statSync(join(SITE, siteRel)).size;
 
+/** The first group of a pattern that has to be in a text; the failure says what is missing instead of a TypeError on null. */
+export function capture(text, pattern, what) {
+  const found = text.match(pattern);
+  if (!found) throw new Error(`${what} is not in the text this check reads`);
+  return found[1];
+}
+
 /**
  * The start tags of an HTML document as { name, attrs } (attribute names lower-cased, values as written).
  * Comments are dropped first. It is a reader for this site's hand-written markup, not a general HTML parser.

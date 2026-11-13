@@ -8,7 +8,7 @@ import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { join, posix } from "node:path";
 import { describe, it } from "node:test";
 import { jpegSize, pngSize } from "./lib/images.mjs";
-import { ROOT, SITE, fromFile, importSpecifiers, moduleGraph, read, readSite, sizeOf, startTags } from "./lib/site.mjs";
+import { ROOT, SITE, capture, fromFile, importSpecifiers, moduleGraph, read, readSite, sizeOf, startTags } from "./lib/site.mjs";
 
 // The most the first load may weigh (HTML, stylesheet, the page's own scripts and fonts), in bytes. It is what the page
 // weighed when the budget was set, plus 5 %. When a change goes over it, either the change is too heavy or this number
@@ -20,13 +20,6 @@ const html = readSite("index.html");
 const css = readSite("assets/css/main.css");
 const tags = startTags(html);
 const ENTRY = tags.find((t) => t.name === "script" && t.attrs.type === "module").attrs.src;
-
-/** The first group of a pattern that has to be in a text; the failure says what is missing instead of a TypeError on null. */
-function captured(text, pattern, what) {
-  const found = text.match(pattern);
-  assert.ok(found, `${what} is not in the text this check reads`);
-  return found[1];
-}
 
 /** The text without its block comments (the only kind CSS has). */
 const stripBlockComments = (text) => text.replace(/\/\*[\s\S]*?\*\//g, "");
@@ -175,8 +168,8 @@ describe("the vendored fonts", () => {
 
   it("weigh what the README and DESIGN.md say", () => {
     const total = rows.reduce((sum, r) => sum + r.bytes, 0);
-    const readme = Number(captured(read("README.md"), /(\d+) KB in total/, "README.md: the weight of the fonts (<n> KB in total)"));
-    const design = Number(captured(read("docs/DESIGN.md"), /(\d+) KB together/, "docs/DESIGN.md: the weight of the fonts (<n> KB together)"));
+    const readme = Number(capture(read("README.md"), /(\d+) KB in total/, "README.md: the weight of the fonts (<n> KB in total)"));
+    const design = Number(capture(read("docs/DESIGN.md"), /(\d+) KB together/, "docs/DESIGN.md: the weight of the fonts (<n> KB together)"));
     assert.equal(readme, Math.round(total / 1024));
     assert.equal(design, Math.round(total / 1024));
     assert.match(notes, new RegExp(`Total: ${total} bytes`));
@@ -211,7 +204,7 @@ describe("site/data/receipts.json", () => {
 
 describe("the code the story cites", () => {
   // The demo and the cited files are one statement about one version of jobbot: the commit build-demo.py wrote down.
-  const built = captured(readSite("demo/BUILD.txt"), /^commit: ([0-9a-f]{7,40})$/m, "demo/BUILD.txt: the line commit: <hash>");
+  const built = capture(readSite("demo/BUILD.txt"), /^commit: ([0-9a-f]{7,40})$/m, "demo/BUILD.txt: the line commit: <hash>");
   const blob = /https:\/\/github\.com\/gonzalo-rosas-rojas\/jobbot\/blob\/([^/"')\s]+)\/([^"')\s#]+)/g;
 
   const cited = [html, read("docs/DESIGN.md"), readSite("assets/fonts/VENDORED.md")].flatMap((text) => [...text.matchAll(blob)]);
@@ -285,7 +278,7 @@ describe("who the page is by, and where a reader goes next", () => {
 
   it("has Spanish text for the next step: its sentence and the three link labels", () => {
     assert.match(i18n, /\["\.next \.next-lead",\s*"[^"]+"\]/, "the next step's sentence has no Spanish text");
-    const labels = JSON.parse(`[${captured(i18n, /\["\.next a",\s*\[([^\]]*)\]\]/, "the next step's Spanish link labels")}]`);
+    const labels = JSON.parse(`[${capture(i18n, /\["\.next a",\s*\[([^\]]*)\]\]/, "the next step's Spanish link labels")}]`);
     assert.equal(labels.length, 3);
     assert.ok(labels.every((label) => label.trim()), "a Spanish link label is empty");
   });
@@ -338,7 +331,7 @@ describe("the preview when the address is shared", () => {
   const CANONICAL = "https://gonzalo-rosas-rojas.github.io/jobbot-showcase/";
   const meta = (key, value) => tags.find((t) => t.name === "meta" && t.attrs[key] === value)?.attrs.content;
   const link = (rel, extra = {}) => tags.find((t) => t.name === "link" && t.attrs.rel === rel && Object.entries(extra).every(([k, v]) => t.attrs[k] === v))?.attrs.href;
-  const title = captured(html, /<title>([^<]*)<\/title>/, "index.html: the <title>");
+  const title = capture(html, /<title>([^<]*)<\/title>/, "index.html: the <title>");
   const description = meta("name", "description");
 
   it("has every Open Graph and Twitter tag, none of them empty", () => {
