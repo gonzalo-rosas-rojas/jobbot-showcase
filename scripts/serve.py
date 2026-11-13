@@ -1,7 +1,9 @@
 """Local preview server for site/. Binds to 127.0.0.1 only, forces correct MIME types (Windows' registry
 sometimes serves .js as text/plain, which breaks ES modules) and disables caching while developing.
-Usage: python scripts/serve.py [port]"""
+Usage: python scripts/serve.py [port]  (default 8790)"""
 import http.server, os, sys
+
+DEFAULT_PORT = 8790
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "site")
 TYPES = {".js": "text/javascript", ".mjs": "text/javascript", ".css": "text/css", ".html": "text/html; charset=utf-8",
@@ -25,5 +27,5 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
 
 if __name__ == "__main__":
-    port = int(sys.argv[1]) if len(sys.argv) > 1 else 8790
+    port = int(sys.argv[1]) if len(sys.argv) > 1 else DEFAULT_PORT
     http.server.ThreadingHTTPServer(("127.0.0.1", port), Handler).serve_forever()
