@@ -17,6 +17,14 @@ const ROUTE = [[85, 72], [320, 72], [555, 72], [790, 72], [790, 150], [85, 150],
 const LEGS = ROUTE.slice(1).map((pt, i) => Math.hypot(pt[0] - ROUTE[i][0], pt[1] - ROUTE[i][1]));
 const TOTAL = LEGS.reduce((a, b) => a + b, 0);
 
+// the drawing's own size (SVG units) and the places the cameras look at
+const VIEW = { w: 880, h: 440 };
+const VIEW_MID_X = VIEW.w / 2; // the cameras end up centred on the picture's middle
+const PHONE_CLOSE_W = 440; // phones: the visible width while following the token (2x), pulling back to VIEW.w
+const LAYER_UNDER_Y_PHONE = 330; // phones: where the camera drops to look at the layer under the chain
+const LAYER_UNDER_Y_WIDE = 300; // wide screens: the same
+const PICTURE_MID_Y = 220; // where both end up, with the whole picture in view
+
 function onRoute(f) {
   let d = clamp(f) * TOTAL;
   for (let i = 0; i < LEGS.length; i++) {
@@ -30,7 +38,6 @@ function onRoute(f) {
 }
 
 const counters = (root) => ({ lines: root.querySelector("#r-lines"), tests: root.querySelector("#r-tests"), deps: root.querySelector("#r-deps") });
-const testsOf = (j) => j.offline_tests ?? j.test_functions;
 
 /** The three figures, not counted yet: dashes rather than invented values. */
 const resetFigures = (out) => {
@@ -40,19 +47,22 @@ const resetFigures = (out) => {
 /** The three figures written from the receipts; `k` (0..1) is how far the count-up has got. */
 const writeFigures = (out, j, k = 1) => {
   out.lines.textContent = fmtCount(j.rust_lines * k);
-  out.tests.textContent = fmtCount(testsOf(j) * k);
+  out.tests.textContent = fmtCount(j.offline_tests * k);
   out.deps.textContent = fmtCount(j.dependencies * k);
 };
 
-/** Reads data/receipts.json, writes the note under the figures and hands the numbers to `then`. */
+/** Reads data/receipts.json, writes the note under the figures and hands the numbers to `then`. A failure to read it is
+ *  reported (with ?qa=1) and leaves the dashes; an error thrown by `then` is not that, and is left to show. */
 function loadReceipts(note, then) {
   fetch("data/receipts.json")
     .then((r) => (r.ok ? r.json() : Promise.reject(new Error("HTTP " + r.status))))
-    .then((j) => {
-      if (j && j.counted_on) note.textContent = tr("machine.note", j);
-      then(j);
-    })
-    .catch((e) => qaWarn("machine: data/receipts.json is not usable, the counters stay as dashes", e));
+    .then(
+      (j) => {
+        if (j && j.counted_on) note.textContent = tr("machine.note", j);
+        then(j);
+      },
+      (e) => qaWarn("machine: data/receipts.json is not usable, the counters stay as dashes", e),
+    );
 }
 
 /** With reduced motion nothing counts up: the three figures are written once, finished, and the note under them with them. */
@@ -71,8 +81,8 @@ export function createMachine(root) {
   const nodes = [...root.querySelectorAll(".node")];
   const wires = [...root.querySelectorAll(".wire")];
   const token = root.querySelector(".token");
-  const camera = createCamera(arch.querySelector("svg"), { w: 880, h: 440 });
-  const wideCam = createWideCamera(arch, arch.querySelector("svg"), { w: 880, h: 440 });
+  const camera = createCamera(arch.querySelector("svg"), VIEW);
+  const wideCam = createWideCamera(arch, arch.querySelector("svg"), VIEW);
   const room = createRoomFit(camera, copy, arch); // phones: the camera's window fits the free room (see camera.js)
   const out = counters(root);
 
@@ -81,67 +91,80 @@ export function createMachine(root) {
   loadReceipts(note, (j) => { receipts = j; });
   resetFigures(out);
 
+  function updateCopy(ctx, fx) {
+    const inn = fx.inn;
+    const gone = fx.out;
+    const vis = inn * (1 - gone);
+    copy.style.opacity = vis.toFixed(3);
+    // phones: a shorter lift on the way out, so the headline does not climb into the diagram above it
+    copy.style.transform = `translate3d(0,${((1 - inn) * 5 - gone * (isPhone(ctx.vw) ? 1.5 : 4)).toFixed(2)}vh,0)`;
+    arch.style.opacity = vis.toFixed(3);
+  }
+
+  function updateChain(p, gone) {
+    // two captions, one after the other
+    caps[0].style.opacity = (smooth(0.03, 0.08, p) * (1 - smooth(0.48, 0.52, p))).toFixed(3);
+    caps[1].style.opacity = (smooth(0.54, 0.58, p) * (1 - gone)).toFixed(3);
+
+    nodes.forEach((n, i) => {
+      n.style.opacity = smooth(NODE_AT[i], NODE_AT[i] + 0.035, p).toFixed(3);
+    });
+    wires.forEach((w, i) => {
+      const [a, b] = WIRE_AT[i];
+      w.style.strokeDashoffset = (1 - smooth(a, b, p)).toFixed(4);
+    });
+
+    // one application travelling the chain, then waiting for the person
+    const f = smooth(0.06, 0.5, p);
+    const [x, y] = onRoute(f);
+    token.setAttribute("transform", `translate(${x.toFixed(1)} ${y.toFixed(1)})`);
+    token.style.opacity = (smooth(0.04, 0.08, p) * (1 - gone)).toFixed(3);
+    return [x, y];
+  }
+
+  // phone: follow the token a beat behind it, drop to the layer under the chain, then pull back (a viewBox at
+  // 2x). Wide screens get the same move in a window right of the copy, starting as close as the phone does in
+  // absolute size, so that the subject is big at every scroll position and the picture is whole at the end.
+  function updateCamera(p, ctx, [x, y]) {
+    const [tx, ty] = onRoute(smooth(0.1, 0.52, p));
+    const down = smooth(0.52, 0.62, p);
+    const pullBack = smooth(0.7, 0.86, p);
+    const cx = lerp(lerp(tx, VIEW_MID_X, down), VIEW_MID_X, pullBack);
+    const { vw, vh } = ctx;
+    if (isWide(vw, vh)) {
+      camera.reset();
+      wideCam.measure(vw, vh);
+      // how close the camera wants to be, in window px per SVG unit: biggest on the first node, whole picture at the end
+      const want = WIDE_CLOSE * (vh / 1080) * track([[0, 1.25], [0.1, 1.25], [0.3, 1], [0.5, 0.82], [0.62, 0.63], [0.7, 0.63], [0.86, 0], [1, 0]], p);
+      const zoom = wideCam.zoomFor(want);
+      // centred on the token itself: at this zoom the window shows the nodes around it, and the empty part ahead of it
+      // is where the next node is about to appear
+      wideCam.aim({ cx: lerp(lerp(x, VIEW_MID_X, down), VIEW_MID_X, pullBack), cy: lerp(lerp(y, LAYER_UNDER_Y_WIDE, down), PICTURE_MID_Y, pullBack), zoom });
+    } else {
+      wideCam.reset();
+      if (isPhone(vw)) camera.aim(cx, lerp(lerp(ty, LAYER_UNDER_Y_PHONE, down), PICTURE_MID_Y, pullBack), lerp(PHONE_CLOSE_W, VIEW.w, pullBack));
+      else camera.reset();
+    }
+  }
+
+  function updateReceipts(p) {
+    const s = smooth(0.62, 0.7, p);
+    stats.style.opacity = s.toFixed(3);
+    note.style.opacity = smooth(0.7, 0.78, p).toFixed(3);
+    if (receipts) {
+      const k = easeOutExpo(smooth(0.64, 0.86, p));
+      writeFigures(out, receipts, k);
+    }
+  }
+
   return {
     resize: room.reset,
     update(p, ctx, _cur, fx) {
       room.fit(ctx.vw, ctx.vh);
-      const inn = fx.inn;
-      const gone = fx.out;
-      const vis = inn * (1 - gone);
-      copy.style.opacity = vis.toFixed(3);
-      // phones: a shorter lift on the way out, so the headline does not climb into the diagram above it
-      copy.style.transform = `translate3d(0,${((1 - inn) * 5 - gone * (isPhone(ctx.vw) ? 1.5 : 4)).toFixed(2)}vh,0)`;
-      arch.style.opacity = vis.toFixed(3);
-
-      // two captions, one after the other
-      caps[0].style.opacity = (smooth(0.03, 0.08, p) * (1 - smooth(0.48, 0.52, p))).toFixed(3);
-      caps[1].style.opacity = (smooth(0.54, 0.58, p) * (1 - gone)).toFixed(3);
-
-      nodes.forEach((n, i) => {
-        n.style.opacity = smooth(NODE_AT[i], NODE_AT[i] + 0.035, p).toFixed(3);
-      });
-      wires.forEach((w, i) => {
-        const [a, b] = WIRE_AT[i];
-        w.style.strokeDashoffset = (1 - smooth(a, b, p)).toFixed(4);
-      });
-
-      // one application travelling the chain, then waiting for the person
-      const f = smooth(0.06, 0.5, p);
-      const [x, y] = onRoute(f);
-      token.setAttribute("transform", `translate(${x.toFixed(1)} ${y.toFixed(1)})`);
-      token.style.opacity = (smooth(0.04, 0.08, p) * (1 - gone)).toFixed(3);
-
-      // phone: follow the token a beat behind it, drop to the layer under the chain, then pull back (a viewBox at
-      // 2x). Wide screens get the same move in a window right of the copy, starting as close as the phone does in
-      // absolute size, so that the subject is big at every scroll position and the picture is whole at the end.
-      const [tx, ty] = onRoute(smooth(0.1, 0.52, p));
-      const down = smooth(0.52, 0.62, p);
-      const wide = smooth(0.7, 0.86, p);
-      const cx = lerp(lerp(tx, 440, down), 440, wide);
-      const { vw, vh } = ctx;
-      if (isWide(vw, vh)) {
-        camera.reset();
-        wideCam.measure(vw, vh);
-        // how close the camera wants to be, in window px per SVG unit: biggest on the first node, whole picture at the end
-        const want = WIDE_CLOSE * (vh / 1080) * track([[0, 1.25], [0.1, 1.25], [0.3, 1], [0.5, 0.82], [0.62, 0.63], [0.7, 0.63], [0.86, 0], [1, 0]], p);
-        const zoom = wideCam.zoomFor(want);
-        // centred on the token itself: at this zoom the window shows the nodes around it, and the empty part ahead of it
-        // is where the next node is about to appear
-        wideCam.aim({ cx: lerp(lerp(x, 440, down), 440, wide), cy: lerp(lerp(y, 300, down), 220, wide), zoom });
-      } else {
-        wideCam.reset();
-        if (isPhone(vw)) camera.aim(cx, lerp(lerp(ty, 330, down), 220, wide), lerp(440, 880, wide));
-        else camera.reset();
-      }
-
-      // the receipts
-      const s = smooth(0.62, 0.7, p);
-      stats.style.opacity = s.toFixed(3);
-      note.style.opacity = smooth(0.7, 0.78, p).toFixed(3);
-      if (receipts) {
-        const k = easeOutExpo(smooth(0.64, 0.86, p));
-        writeFigures(out, receipts, k);
-      }
+      updateCopy(ctx, fx);
+      const tokenAt = updateChain(p, fx.out);
+      updateCamera(p, ctx, tokenAt);
+      updateReceipts(p);
     },
   };
 }
