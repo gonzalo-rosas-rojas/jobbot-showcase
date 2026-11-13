@@ -20,7 +20,7 @@ export function createTry({ warm = true } = {}) {
   const openers = [...document.querySelectorAll("[data-try]")];
   const behind = [...document.body.children].filter((el) => el !== root);
   let opener = null;
-  let open = false;
+  let isOpen = false;
 
   const load = () => {
     if (!frame.getAttribute("src")) frame.setAttribute("src", withLang(frame.dataset.src));
@@ -33,7 +33,7 @@ export function createTry({ warm = true } = {}) {
     if (!doc || doc.__tryWatched) return;
     doc.__tryWatched = true;
     doc.addEventListener("keydown", (e) => {
-      if (e.key !== "Escape" || !open) return;
+      if (e.key !== "Escape" || !isOpen) return;
       const busy = doc.querySelector(".keys, .pal, #detail.open, #app li.cur");
       if (!busy) close();
     }, true);
@@ -57,9 +57,17 @@ export function createTry({ warm = true } = {}) {
     root.style.setProperty("--oy", y.toFixed(0) + "px");
   }
 
+  /** the live copy starts as the story's panel is on screen: same position, same size */
+  function placeFromPlane(box) {
+    root.style.setProperty("--px", box.left.toFixed(1) + "px");
+    root.style.setProperty("--py", box.top.toFixed(1) + "px");
+    root.style.setProperty("--sx", (box.width / window.innerWidth).toFixed(4));
+    root.style.setProperty("--sy", (box.height / window.innerHeight).toFixed(4));
+  }
+
   function show(from) {
-    if (open) return;
-    open = true;
+    if (isOpen) return;
+    isOpen = true;
     opener = from || document.activeElement;
     load();
     setOrigin(from);
@@ -67,12 +75,7 @@ export function createTry({ warm = true } = {}) {
     const box = planeBox();
     root.classList.add("no-anim");
     root.classList.toggle("from-plane", !!box);
-    if (box) {
-      root.style.setProperty("--px", box.left.toFixed(1) + "px");
-      root.style.setProperty("--py", box.top.toFixed(1) + "px");
-      root.style.setProperty("--sx", (box.width / window.innerWidth).toFixed(4));
-      root.style.setProperty("--sy", (box.height / window.innerHeight).toFixed(4));
-    }
+    if (box) placeFromPlane(box);
     void root.offsetWidth;
     root.classList.remove("no-anim");
     behind.forEach((el) => el.setAttribute("inert", ""));
@@ -84,8 +87,8 @@ export function createTry({ warm = true } = {}) {
   }
 
   function close() {
-    if (!open) return;
-    open = false;
+    if (!isOpen) return;
+    isOpen = false;
     root.classList.remove("is-open");
     root.setAttribute("inert", "");
     behind.forEach((el) => el.removeAttribute("inert"));
@@ -104,7 +107,7 @@ export function createTry({ warm = true } = {}) {
   closeBtn.addEventListener("click", close);
   frame.addEventListener("load", watchFrame);
   document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && open) close();
+    if (e.key === "Escape" && isOpen) close();
   });
-  return { show, close, get isOpen() { return open; } };
+  return { show, close, get isOpen() { return isOpen; } };
 }
