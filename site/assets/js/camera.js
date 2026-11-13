@@ -57,9 +57,8 @@ export function createCamera(svg, base) {
   };
 }
 
-/** Phones: the camera's window is as tall as the free room between the dial and the copy (the diagram is not squeezed on a
- *  tall phone and does not run into its own caption on a short one). `copy` is the text under the diagram, `box` the
- *  diagram's own box. `fit(vw, vh)` measures once per window size; `reset()` makes the next `fit` measure again. */
+/** Phones: the camera's window is as tall as the free room between the dial and the copy. `copy` is the text under the
+ *  diagram, `box` its box. `fit(vw, vh)` measures once per window size; `reset()` makes the next `fit` measure again. */
 export function createRoomFit(camera, copy, box) {
   let key = "";
   return {

@@ -7,10 +7,10 @@ import { isPhone, clamp, lerp, qaWarn, smooth, track } from "./util.js";
 const PANEL_W = 1920; // the size the panel is drawn at inside its iframe, before the plane scales it
 const PANEL_H = 1080;
 const HUD_H = 56; // the top bar's height (`.hud` in main.css)
-const HUD_GAP = 20; // air under the top bar that the docked panel keeps free
-const PHONE_PANEL_SHARE = 0.9; // phones: the docked panel's size, as a share of the size that fills the window
-const DESKTOP_PANEL_SHARE = 0.8; // wide screens: the same, when it fits
-const PHONE_PEEK_GAP = 22; // phones: the panel's top edge sits this far under the last line of act 2's copy
+const HUD_GAP = 20; // air under the top bar
+const PHONE_PANEL_SHARE = 0.9; // the docked panel's size as a share of the size that fills the window (phones)...
+const DESKTOP_PANEL_SHARE = 0.8; // ...and on wide screens, when it fits
+const PHONE_PEEK_GAP = 22; // phones: the panel's top edge is this far under act 2's last line
 
 const DOCK_TOP = 54; // gap from the top of the window to the docked dial's frame
 const DOCK_MARGIN = 6; // gap between the docked dial and its gutter and top

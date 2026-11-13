@@ -5,11 +5,11 @@
 
 import { clamp, lerp, reducedMotion, smooth } from "./util.js";
 
-const SNAP_SLACK_PX = 1; // an act counts as reached this many px before its top, so sub-pixel layout never skips it
-const NEAR_AHEAD = 1.2; // an act is updated from this many viewport heights before it reaches the screen...
-const NEAR_BEHIND = 0.2; // ...until this many viewport heights after it has left
-const SMOOTHING_RATE = 9; // 1 / s: how fast the read position catches up with the scroll position
-const SETTLE_PX = 0.2; // closer than this to the scroll position, the read position lands on it and the loop sleeps
+const SNAP_SLACK_PX = 1; // an act counts as reached this far before its top (sub-pixel layout)
+const NEAR_AHEAD = 1.2; // acts are updated from this many viewport heights before they reach the screen...
+const NEAR_BEHIND = 0.2; // ...until this many after they have left
+const SMOOTHING_RATE = 9; // 1 / s: how fast the read position catches up with the scroll
+const SETTLE_PX = 0.2; // this close, it lands on the scroll position and the loop sleeps
 
 export function createEngine({ acts, onFrame }) {
   const RM = reducedMotion();
