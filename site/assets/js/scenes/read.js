@@ -3,19 +3,32 @@
 // the scroll, forwards and backwards. The default threshold of 60 is the real one; the scores are a
 // labelled sample, never real offers.
 
-import { clamp, lerp, smooth, easeOutExpo, mulberry32, track } from "../util.js";
+import { PHONE_MAX_W, clamp, fmtCount, smooth, easeOutExpo, mulberry32, track } from "../util.js";
 
 const N = 412;
 const BINS = 40;
 
+// The sample is synthetic: a bell centred near CENTER, SPREAD points wide, with a longer right tail
+// (TAIL_CHANCE of the offers get up to TAIL_LEN extra points). The seed is fixed so every visit sees the same offers.
+const SEED = 412;
+const CENTER = 47;
+const SPREAD = 15;
+const BELL_GAIN = 1.8;
+const TAIL_CHANCE = 0.08;
+const TAIL_LEN = 28;
+
+const DEFAULT_THRESHOLD = 60; // the real one
+const TIGHT_THRESHOLD = 78; // where the slider tightens to
+const TIGHT_FROM = 70; // above this the scene reads as "tight"
+
 function makeScores() {
-  const rand = mulberry32(412);
+  const rand = mulberry32(SEED);
   const scores = [];
   for (let i = 0; i < N; i++) {
-    // sum of uniforms ~ bell-shaped, centred near 47 with a longer right tail
-    const g = (rand() + rand() + rand() + rand() - 2) * 1.8;
-    const tail = rand() < 0.08 ? rand() * 28 : 0;
-    scores.push(clamp(Math.round(47 + g * 15 + tail), 4, 98, 0));
+    // sum of uniforms ~ bell-shaped
+    const g = (rand() + rand() + rand() + rand() - 2) * BELL_GAIN;
+    const tail = rand() < TAIL_CHANCE ? rand() * TAIL_LEN : 0;
+    scores.push(clamp(Math.round(CENTER + g * SPREAD + tail), 4, 98));
   }
   return scores.sort((a, b) => a - b);
 }
@@ -36,10 +49,10 @@ export function createRead(root) {
   const counts = new Array(BINS).fill(0);
   for (const s of scores) counts[Math.min(BINS - 1, Math.floor((s / 100) * BINS))]++;
   const maxC = Math.max(...counts);
-  const bars = counts.map((c, i) => {
+  const binCenters = counts.map((_, i) => Math.round(((i + 0.5) / BINS) * 100));
+  const bars = counts.map((c) => {
     const b = document.createElement("i");
     b.style.setProperty("--h", (c / maxC).toFixed(3));
-    b.dataset.v = String(Math.round(((i + 0.5) / BINS) * 100));
     hist.append(b);
     return b;
   });
@@ -56,7 +69,6 @@ export function createRead(root) {
   };
 
   let lastTh = -1;
-  const fmt = (n) => n.toLocaleString("en-US");
 
   // The knob and the fill move with transforms (the knob by translateX in px of the track's width, the fill by scaleX),
   // so no frame writes layout properties. The width is read when the window changes size, not per frame. Both land on
@@ -74,7 +86,7 @@ export function createRead(root) {
     update(p, ctx, _cur, fx) {
       // text column: arrives with the dock, leaves before the next act. On phones the panel docks below the copy, so
       // the copy arrives once the panel has settled there instead of while it is still flying down through that place.
-      const narrow = ctx && ctx.vw < 760;
+      const narrow = ctx.vw < PHONE_MAX_W;
       const inn = narrow ? smooth(0.17, 0.25, p) : smooth(0.0, 0.1, p);
       const out = fx.out;
       copy.style.opacity = (inn * (1 - out)).toFixed(3);
@@ -83,12 +95,12 @@ export function createRead(root) {
 
       // the offers being read (eases out, then holds)
       const r = Math.round(N * easeOutExpo(smooth(0.06, 0.62, p)));
-      read.textContent = fmt(r);
+      read.textContent = fmtCount(r);
 
-      // threshold: starts at the real default (60), tightens to 78, relaxes back to 60
-      const th = Math.round(track([[0, 60], [0.3, 60], [0.5, 78], [0.72, 78], [0.88, 60], [1, 60]], p));
+      // threshold: starts at the real default, tightens, relaxes back to the default
+      const th = Math.round(track([[0, DEFAULT_THRESHOLD], [0.3, DEFAULT_THRESHOLD], [0.5, TIGHT_THRESHOLD], [0.72, TIGHT_THRESHOLD], [0.88, DEFAULT_THRESHOLD], [1, DEFAULT_THRESHOLD]], p));
       const above = Math.round(countAbove(th) * smooth(0.06, 0.5, p));
-      pass.textContent = fmt(above);
+      pass.textContent = fmtCount(above);
       top.textContent = String(scores[scores.length - 1]);
       thEl.textContent = String(th);
       const pos = th / 100;
@@ -98,9 +110,9 @@ export function createRead(root) {
       fill.style.transform = `scaleX(${(at / trackW).toFixed(5)})`;
       if (th !== lastTh) {
         lastTh = th;
-        for (const b of bars) b.classList.toggle("on", +b.dataset.v >= th);
+        bars.forEach((b, i) => b.classList.toggle("on", binCenters[i] >= th));
       }
-      root.classList.toggle("is-tight", th > 70);
+      root.classList.toggle("is-tight", th > TIGHT_FROM);
     },
   };
 }
