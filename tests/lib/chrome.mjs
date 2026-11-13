@@ -45,6 +45,12 @@ export async function until(check, what, { ms = 8000, every = 25 } = {}) {
   }
 }
 
+/** A screenshot of the page as the bytes of the image (`options` as for Page.captureScreenshot: format, quality...). */
+export async function screenshot(page, options) {
+  const shot = await page.send("Page.captureScreenshot", options);
+  return Buffer.from(shot.data, "base64");
+}
+
 export async function launchChrome({ width = 1440, height = 900 } = {}) {
   const exe = findChrome();
   if (!exe) throw new Error("Chrome not found");
@@ -76,6 +82,13 @@ export async function launchChrome({ width = 1440, height = 900 } = {}) {
 
   let nextId = 0;
   const pending = new Map();
+  let exitedWith = null; // set when Chrome is gone: what calls made after that are told
+  // a call Chrome never answered because it died would otherwise leave its test waiting for ever
+  child.once("exit", (code) => {
+    exitedWith = `Chrome exited (code ${code})`;
+    for (const call of pending.values()) call.fail(new Error(`${call.method}: ${exitedWith}`));
+    pending.clear();
+  });
   const listeners = new Set();
   let buffer = "";
   fromChrome.setEncoding("utf8");
@@ -98,6 +111,7 @@ export async function launchChrome({ width = 1440, height = 900 } = {}) {
 
   const send = (method, params = {}, sessionId) =>
     new Promise((ok, fail) => {
+      if (exitedWith) return fail(new Error(`${method}: ${exitedWith}`));
       const id = ++nextId;
       pending.set(id, { ok, fail, method });
       toChrome.write(JSON.stringify({ id, method, params, sessionId }) + "\0");
