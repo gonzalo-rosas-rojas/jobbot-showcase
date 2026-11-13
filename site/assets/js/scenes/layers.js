@@ -3,7 +3,7 @@
 // leader lines tie to each plate; the plates themselves carry only shape and one number (the score).
 // The score counts from 0 to 92 while its plate is the active one, forwards and backwards.
 
-import { PHONE_MAX_W, clamp, lerp, smooth } from "../util.js";
+import { isPhone, clamp, lerp, smooth } from "../util.js";
 
 const SW = 560; // plate size in CSS px, before the stage scales it
 const SH = 260;
@@ -59,7 +59,7 @@ export function createLayers(root) {
   return {
     update(p, ctx, _cur, fx) {
       const { vw, vh } = ctx;
-      const narrow = vw < PHONE_MAX_W;
+      const narrow = isPhone(vw);
 
       const inn = fx.inn;
       const out = fx.out;

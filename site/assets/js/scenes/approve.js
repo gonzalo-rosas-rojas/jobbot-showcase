@@ -2,7 +2,7 @@
 // mint appears: green means a decision a human made. One proposal is approved, then the five squares of the
 // gate fill one by one (config: first_n_reviewed = 5). Same five squares that sat empty on the gate plate in act 03.
 
-import { PHONE_MAX_W, clamp, smooth } from "../util.js";
+import { isPhone, clamp, smooth } from "../util.js";
 import { t as tr } from "../i18n.js";
 
 const SEND_START = 0.18; // scroll progress at which the button starts sending...
@@ -21,7 +21,7 @@ export function createApprove(root) {
 
   return {
     update(p, ctx, _cur, fx) {
-      const narrow = ctx.vw < PHONE_MAX_W;
+      const narrow = isPhone(ctx.vw);
       const inn = fx.inn;
       const out = fx.late; // leaves as the sun comes up (act 8 starts growing it at once), not before
       const vis = inn * (1 - out);

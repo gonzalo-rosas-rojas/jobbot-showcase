@@ -3,7 +3,7 @@
 // one giant word, and the five rules the code enforces, each with the file that enforces it.
 // Everything before this scene is quiet on purpose so that this one lands.
 
-import { PHONE_MAX_W, lerp, smooth, easeInOut } from "../util.js";
+import { lerp, smooth, easeInOut } from "../util.js";
 import { dockGeometry } from "../rig.js";
 import { t as tr } from "../i18n.js";
 

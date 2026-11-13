@@ -2,7 +2,7 @@
 // can't be read, so the camera zooms in, follows the action and pulls back for the whole picture. It is
 // only a viewBox, so the art stays plain SVG and wide screens never touch it.
 
-import { PHONE_MAX_W, clampTo } from "./util.js";
+import { isPhone, clampTo } from "./util.js";
 
 const RATIO = 0.78; // visible height / visible width
 
@@ -10,7 +10,7 @@ const RATIO = 0.78; // visible height / visible width
 export const WIDE_CLOSE = 2.3;
 
 /** Wide screens (and tall enough) get the diagram in a window beside the copy; everything else uses the phone camera. */
-export const isWide = (vw, vh) => vw > PHONE_MAX_W && vh >= 600;
+export const isWide = (vw, vh) => !isPhone(vw) && vh >= 600;
 
 /** Phones: the diagram's box is as tall as the width allows (RATIO) unless the copy under it needs the room; then the camera
  *  looks through a shorter window (never below 0.5, which is the picture's own 2:1 shape). `room` is the free height in px. */
@@ -55,7 +55,7 @@ export function createRoomFit(camera, copy, box) {
       const k = vw + "x" + vh;
       if (k === key) return;
       key = k;
-      if (vw < PHONE_MAX_W) camera.setRatio(phoneRatio(copy.offsetTop - 12 - box.offsetTop, box.offsetWidth));
+      if (isPhone(vw)) camera.setRatio(phoneRatio(copy.offsetTop - 12 - box.offsetTop, box.offsetWidth));
     },
     reset() {
       key = "";

@@ -3,7 +3,7 @@
 // the scroll, forwards and backwards. The default threshold of 60 is the real one; the scores are a
 // labelled sample, never real offers.
 
-import { PHONE_MAX_W, clamp, fmtCount, smooth, easeOutExpo, mulberry32, track } from "../util.js";
+import { isPhone, clamp, fmtCount, smooth, easeOutExpo, mulberry32, track } from "../util.js";
 
 const N = 412;
 const BINS = 40;
@@ -86,7 +86,7 @@ export function createRead(root) {
     update(p, ctx, _cur, fx) {
       // text column: arrives with the dock, leaves before the next act. On phones the panel docks below the copy, so
       // the copy arrives once the panel has settled there instead of while it is still flying down through that place.
-      const narrow = ctx.vw < PHONE_MAX_W;
+      const narrow = isPhone(ctx.vw);
       const inn = narrow ? smooth(0.17, 0.25, p) : smooth(0.0, 0.1, p);
       const out = fx.out;
       copy.style.opacity = (inn * (1 - out)).toFixed(3);

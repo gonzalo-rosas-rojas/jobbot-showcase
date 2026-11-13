@@ -63,6 +63,9 @@ export function clockText(nightT) {
 /** Widest viewport (px) that gets the phone composition; the stylesheet's `max-width: 760px` is the same line. */
 export const PHONE_MAX_W = 760;
 
+/** True for the phone composition: up to and including PHONE_MAX_W, as the stylesheet's `max-width` media query is. */
+export const isPhone = (vw) => vw <= PHONE_MAX_W;
+
 /** A count as the page writes it: rounded to a whole number, English thousands separators. */
 export const fmtCount = (n) => Math.round(n).toLocaleString("en-US");
 

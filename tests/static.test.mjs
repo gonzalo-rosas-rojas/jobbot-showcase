@@ -381,3 +381,27 @@ describe("the preview when the address is shared", () => {
     assert.deepEqual(pngSize(readFileSync(join(SITE, href))), { width: 180, height: 180 });
   });
 });
+
+describe("the phone breakpoint", () => {
+  // util.js reads window.location when it is loaded; a bare stand-in is all this check needs of a browser
+  globalThis.window ??= { location: { search: "" } };
+  const util = import("../site/assets/js/util.js");
+  const camera = import("../site/assets/js/camera.js");
+  const phoneWidth = Number(capture(css, /@media \(max-width: (\d+)px\)/, "main.css: the phone media query (max-width: <n>px)"));
+
+  it("is the stylesheet's own: a phone up to and including max-width", async () => {
+    const { PHONE_MAX_W, isPhone } = await util;
+    assert.equal(PHONE_MAX_W, phoneWidth);
+    assert.equal(isPhone(phoneWidth), true, "at exactly the stylesheet's width the page is already the phone layout");
+    assert.equal(isPhone(phoneWidth + 1), false);
+    assert.equal(isPhone(phoneWidth - 1), true);
+  });
+
+  it("leaves no width that is neither a phone nor wide (the diagrams' camera must be set at every width)", async () => {
+    const { isPhone } = await util;
+    const { isWide } = await camera;
+    for (const vw of [phoneWidth - 1, phoneWidth, phoneWidth + 1]) {
+      assert.ok(isPhone(vw) !== isWide(vw, 900), `at ${vw} px the page is ${isPhone(vw) ? "both" : "neither"}`);
+    }
+  });
+});

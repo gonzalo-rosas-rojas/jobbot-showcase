@@ -2,7 +2,7 @@
 // unknown one is framed and left for a person. The point of the scene is the refusal, so it ends on a stamp.
 // All names, mails and the company are fictional.
 
-import { PHONE_MAX_W, clamp, lerp, smooth } from "../util.js";
+import { isPhone, clamp, lerp, smooth } from "../util.js";
 
 const T0 = 0.1; // typing starts
 const T1 = 0.6; // typing ends
@@ -32,7 +32,7 @@ export function createForm(root) {
     const key = vw + "x" + vh;
     if (key === fitKey) return;
     fitKey = key;
-    if (vw >= PHONE_MAX_W) {
+    if (!isPhone(vw)) {
       fit = 1;
       return;
     }
@@ -50,7 +50,7 @@ export function createForm(root) {
       fitKey = "";
     },
     update(p, ctx, _cur, fx) {
-      const narrow = ctx.vw < PHONE_MAX_W;
+      const narrow = isPhone(ctx.vw);
       measure(ctx.vw, ctx.vh);
       const inn = fx.inn;
       const out = fx.out;

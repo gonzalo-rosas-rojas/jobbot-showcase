@@ -3,7 +3,7 @@
 // person at the end. Then the layer under it is drawn, and the counted numbers arrive from
 // data/receipts.json, which scripts/receipts.py writes. Nothing here is a claim the repo can't back.
 
-import { PHONE_MAX_W, clamp, fmtCount, lerp, qaWarn, smooth, easeOutExpo, track } from "../util.js";
+import { isPhone, clamp, fmtCount, lerp, qaWarn, smooth, easeOutExpo, track } from "../util.js";
 import { WIDE_CLOSE, createCamera, isWide, createRoomFit, createWideCamera } from "../camera.js";
 import { t as tr } from "../i18n.js";
 
@@ -90,7 +90,7 @@ export function createMachine(root) {
       const vis = inn * (1 - gone);
       copy.style.opacity = vis.toFixed(3);
       // phones: a shorter lift on the way out, so the headline does not climb into the diagram above it
-      copy.style.transform = `translate3d(0,${((1 - inn) * 5 - gone * (ctx.vw < PHONE_MAX_W ? 1.5 : 4)).toFixed(2)}vh,0)`;
+      copy.style.transform = `translate3d(0,${((1 - inn) * 5 - gone * (isPhone(ctx.vw) ? 1.5 : 4)).toFixed(2)}vh,0)`;
       arch.style.opacity = vis.toFixed(3);
 
       // two captions, one after the other
@@ -129,7 +129,7 @@ export function createMachine(root) {
         wideCam.aim(vw, vh, lerp(lerp(x, 440, down), 440, wide), lerp(lerp(y, 300, down), 220, wide), zoom);
       } else {
         wideCam.off();
-        if (vw < PHONE_MAX_W) camera.aim(cx, lerp(lerp(ty, 330, down), 220, wide), lerp(440, 880, wide));
+        if (isPhone(vw)) camera.aim(cx, lerp(lerp(ty, 330, down), 220, wide), lerp(440, 880, wide));
         else camera.reset();
       }
 

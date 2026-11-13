@@ -3,7 +3,7 @@
 // the funnel band narrows (demo numbers: 38, 11, 4, 3, 1). Then the branch the code comments on:
 // ghosted is not terminal, a late answer can move it again.
 
-import { PHONE_MAX_W, lerp, smooth, track } from "../util.js";
+import { isPhone, lerp, smooth, track } from "../util.js";
 import { WIDE_CLOSE, createCamera, isWide, createRoomFit, createWideCamera } from "../camera.js";
 
 const XS = [50, 250, 450, 650, 850];
@@ -75,7 +75,7 @@ export function createFollow(root) {
         wideCam.aim(vw, vh, lerp(x, 450, away), lerp(130, 215, away), zoom);
       } else {
         wideCam.off();
-        if (vw < PHONE_MAX_W) camera.aim(lerp(XS[0] + lag * STOP_GAP + 80, 500, branch), lerp(Y, 230, branch), lerp(450, 560, branch));
+        if (isPhone(vw)) camera.aim(lerp(XS[0] + lag * STOP_GAP + 80, 500, branch), lerp(Y, 230, branch), lerp(450, 560, branch));
         else camera.reset();
       }
 

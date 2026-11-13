@@ -1,7 +1,7 @@
 // Act 01 · 18:00 · The window opens. A giant headline, the dial, and a scroll cue. The headline rises
 // letter by letter once (a ritual of opening, 30 ms per letter), then lifts away as the panel arrives.
 
-import { PHONE_MAX_W, smooth, reducedMotion } from "../util.js";
+import { isPhone, smooth, reducedMotion } from "../util.js";
 
 function splitLetters(root) {
   let i = 0;
@@ -47,7 +47,7 @@ export function createHero(root) {
   return {
     update(p, ctx) {
       // phones: the plane rises under a beat that sits above it, so the beat leaves before the plane's top reaches it
-      const narrow = ctx.vw < PHONE_MAX_W;
+      const narrow = isPhone(ctx.vw);
       const beatIn = smooth(0.3, 0.4, p);
       const b = beatIn * (1 - (narrow ? smooth(0.5, 0.57, p) : smooth(0.58, 0.7, p)));
       beat.style.opacity = b.toFixed(3);

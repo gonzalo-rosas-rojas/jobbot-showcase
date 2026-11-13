@@ -2,7 +2,7 @@
 // build, fictional data) lying on a plane in 3D. Both are positioned from the global act position `u`
 // (act index + local progress), so the camera moves are plain keyframes in one place.
 
-import { PHONE_MAX_W, clamp, lerp, qaWarn, smooth, track } from "./util.js";
+import { isPhone, clamp, lerp, qaWarn, smooth, track } from "./util.js";
 
 const PANEL_W = 1920; // the size the panel is drawn at inside its iframe, before the plane scales it
 const PANEL_H = 1080;
@@ -13,7 +13,7 @@ const DOCK_MARGIN = 6; // gap between the docked dial and its gutter and top
 
 /** Where the dial sits once docked in the top right corner: its size, the gutter to the window's edge and its centre. */
 export function dockGeometry(vw) {
-  const narrow = vw < PHONE_MAX_W;
+  const narrow = isPhone(vw);
   const gutter = narrow ? 18 : Math.min(64, vw * 0.042);
   const size = narrow ? 84 : clamp(vw * 0.082, 86, 116);
   return { gutter, size, x: vw - gutter - size / 2 - DOCK_MARGIN, y: DOCK_TOP + size / 2 + DOCK_MARGIN };
@@ -31,7 +31,7 @@ export function createRig({ dialHost, dial, plane, iframe, heroCopy, readCopy })
   let ready = false; // the panel has loaded: until then the plane stays hidden, so a visitor never sees it empty
 
   function layout(vw, vh) {
-    const narrow = vw < PHONE_MAX_W;
+    const narrow = isPhone(vw);
     if (narrow) {
       // Phones are stacked: the hero dial sits under the hero copy (its last line is the scroll cue) and never behind
       // the headline or the lede, as big as the room left to the bottom of the screen allows. The copy's end is
@@ -81,7 +81,7 @@ export function createRig({ dialHost, dial, plane, iframe, heroCopy, readCopy })
     // `u` jumps from 1.91 to 2.0 when act 3 takes over (the acts overlap). The panel leaves while act 2's copy does,
     // which is after that jump, so it follows act 2's own progress, which does not jump.
     const uPlane = ctx.idx >= 2 ? 1 + ctx.items[1].p : u;
-    const narrow = vw < PHONE_MAX_W;
+    const narrow = isPhone(vw);
     const { gutter, size: dockSize, x: dx, y: dy } = dockGeometry(vw);
 
     // ---- dial: hero object -> small clock docked at the top right
