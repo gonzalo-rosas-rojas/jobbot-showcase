@@ -62,23 +62,29 @@ const TYPES = {
   ".txt": "text/plain; charset=utf-8",
 };
 
+const NOT_A_FILE = ["ENOENT", "ENOTDIR", "EISDIR"];
+const notFound = (res) => res.writeHead(404, { "content-type": "text/plain" }).end("not found");
+
 /**
  * Serves site/ on 127.0.0.1 at a port the system picks. Nothing is cached, so every run sees the files as they are.
- * `log` receives { path, at } for each request, in the order they arrive. `slow(path)` returns how many ms to hold the
- * answer for that path (a test uses it to make a file arrive late).
+ * `slow(path)` returns how many ms to hold the answer for that path, decoded as the file is looked up (a test uses it to
+ * make a file arrive late).
  */
-export function serveSite({ log = () => {}, slow = () => 0 } = {}) {
-  const server = createServer((req, res) => setTimeout(() => answer(req, res), slow(new URL(req.url, "http://localhost").pathname)));
-  function answer(req, res) {
+export function serveSite({ slow = () => 0 } = {}) {
+  const server = createServer((req, res) => {
     const path = decodeURIComponent(new URL(req.url, "http://localhost").pathname);
-    log({ path, at: performance.now() });
+    setTimeout(() => answer(path, res), slow(path));
+  });
+  function answer(path, res) {
     const file = resolve(SITE, normalize("." + (path.endsWith("/") ? path + "index.html" : path)));
+    if (file !== SITE && !file.startsWith(SITE + sep)) return notFound(res);
     let body;
     try {
-      if (file !== SITE && !file.startsWith(SITE + sep)) throw new Error("outside the site");
       body = readFileSync(file);
-    } catch {
-      res.writeHead(404, { "content-type": "text/plain" }).end("not found");
+    } catch (err) {
+      // a file that is there but cannot be read is not "not found": the test that asked should see why
+      if (NOT_A_FILE.includes(err.code)) return notFound(res);
+      res.writeHead(500, { "content-type": "text/plain" }).end(`${err.code}: ${file}`);
       return;
     }
     res.writeHead(200, { "content-type": TYPES[extname(file)] || "application/octet-stream", "cache-control": "no-store" }).end(body);

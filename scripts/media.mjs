@@ -22,6 +22,8 @@ import { ROOT, serveSite } from "../tests/lib/site.mjs";
 
 const SIZE = { width: 1440, height: 900 };
 const QUALITY = 82;
+// the panel's own entrance (it travels to the tab the story asks for) and the sun's last pixels take this long to finish
+const PANEL_SETTLE_MS = 3000;
 
 // where in the story each still is taken: [file, act id, progress through the act]
 const MOMENTS = [
@@ -31,8 +33,9 @@ const MOMENTS = [
 ];
 
 const server = await serveSite();
-const chrome = await launchChrome(SIZE);
+let chrome;
 try {
+  chrome = await launchChrome(SIZE);
   const page = await chrome.newPage(SIZE);
   await page.goto(`${server.origin}/?qa=1`);
   await page.waitFor(`document.documentElement.classList.contains("js") && document.fonts.status === "loaded"`, "the page to start");
@@ -44,8 +47,7 @@ try {
       return Math.round(el.getBoundingClientRect().top + scrollY + ${progress} * (el.offsetHeight - innerHeight));
     })()`);
     await page.eval(`window.scrollTo(0, ${at}); window.__night.snap()`);
-    // the panel's own entrance (it travels to the tab the story asks for) and the sun's last pixels take a moment to finish
-    await new Promise((r) => setTimeout(r, 3000));
+    await new Promise((r) => setTimeout(r, PANEL_SETTLE_MS));
     await page.frames(10);
     await page.eval(`window.__night.snap()`);
     await page.frames(5);
@@ -55,6 +57,6 @@ try {
   }
   await page.close();
 } finally {
-  await chrome.close();
+  await chrome?.close();
   await server.close();
 }

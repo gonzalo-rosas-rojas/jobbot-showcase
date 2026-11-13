@@ -49,7 +49,8 @@ def copy_demo(src, commit):
     with open(os.path.join(DEMO, "index.html"), "w", encoding="utf-8", newline="\n") as f:
         f.write(html)
     fonts_dst = os.path.join(DEMO, "fonts")
-    shutil.rmtree(fonts_dst, ignore_errors=True)
+    if os.path.isdir(fonts_dst):
+        shutil.rmtree(fonts_dst)
     shutil.copytree(fonts_src, fonts_dst)
     write_build_record(DEMO, commit)
     print("demo copied: %d bytes and fonts/ (%d files) from %s, commit %s" % (

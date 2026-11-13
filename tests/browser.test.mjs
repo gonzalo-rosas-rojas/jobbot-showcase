@@ -12,15 +12,27 @@ const skip = !required && !findChrome() ? "Chrome was not found: set CHROME_PATH
 
 const DESKTOP = { width: 1440, height: 900 };
 const PHONE = { width: 390, height: 844 };
+const PANEL_WAIT_MS = 10000; // how long a test waits for the panel to be requested after a load event that never comes
+const MAX_BLANK_PX = 200; // most an act may leave empty after its last line
+const MAX_ACT_HEIGHT_PX = 3000; // tallest an act may be when it is laid out as a document
 
 let server;
 let chrome;
 let panelDelayMs = 0; // set by the test that needs the panel to arrive late
 let hungPath = null; // set by the test that needs one file of the page never to finish
 
+const HUNG_FILE_MS = 60000; // long enough that the file never arrives during a test
+
+/** How long the test server holds the answer for a path: the panel by `panelDelayMs`, the hung file for good. */
+function delayFor(path) {
+  if (path === "/demo/index.html") return panelDelayMs;
+  if (path === hungPath) return HUNG_FILE_MS;
+  return 0;
+}
+
 before(async () => {
   if (skip) return;
-  server = await serveSite({ slow: (path) => (path === "/demo/index.html" ? panelDelayMs : path === hungPath ? 60000 : 0) });
+  server = await serveSite({ slow: delayFor });
   chrome = await launchChrome(DESKTOP);
 });
 
@@ -170,7 +182,7 @@ describe("loading the panel", { skip }, () => {
     try {
       const page = await chrome.newPage(DESKTOP);
       await page.send("Page.navigate", { url: `${server.origin}/` });
-      await until(() => demoRequests(page).length > 0, "the panel to be requested", { ms: 10000 });
+      await until(() => demoRequests(page).length > 0, "the panel to be requested", { ms: PANEL_WAIT_MS });
       assert.equal(page.loadedAt, null, "the page loaded, so this did not test a load event that never comes");
       assert.equal(await page.eval(`document.readyState`), "interactive");
       await page.close();
@@ -190,23 +202,26 @@ describe("loading the panel", { skip }, () => {
 
   it("never shows the panel before it has content, even when the visitor jumps straight to it", async () => {
     panelDelayMs = 600;
-    const page = await open("?qa=1", { beforeLoad: noIdle });
-    await page.scrollTo(await actTop(page, "a2"));
-    assert.equal(await page.eval(`getComputedStyle(document.getElementById("plane")).visibility`), "hidden", "the panel should wait for its content");
-    const state = () => page.eval(`(() => {
-      const plane = document.getElementById("plane");
-      const doc = plane.querySelector("iframe").contentDocument;
-      return { visible: getComputedStyle(plane).visibility === "visible", ready: doc.readyState === "complete" && doc.body.children.length > 0 };
-    })()`);
-    const seen = [];
-    await until(async () => {
-      const s = await state();
-      seen.push(s);
-      return s.visible;
-    }, "the panel to appear");
-    assert.ok(seen.every((s) => !s.visible || s.ready), "the panel was on screen before it had loaded");
-    panelDelayMs = 0;
-    await page.close();
+    try {
+      const page = await open("?qa=1", { beforeLoad: noIdle });
+      await page.scrollTo(await actTop(page, "a2"));
+      assert.equal(await page.eval(`getComputedStyle(document.getElementById("plane")).visibility`), "hidden", "the panel should wait for its content");
+      const state = () => page.eval(`(() => {
+        const plane = document.getElementById("plane");
+        const doc = plane.querySelector("iframe").contentDocument;
+        return { visible: getComputedStyle(plane).visibility === "visible", ready: doc.readyState === "complete" && doc.body.children.length > 0 };
+      })()`);
+      const seen = [];
+      await until(async () => {
+        const s = await state();
+        seen.push(s);
+        return s.visible;
+      }, "the panel to appear");
+      assert.ok(seen.every((s) => !s.visible || s.ready), "the panel was on screen before it had loaded");
+      await page.close();
+    } finally {
+      panelDelayMs = 0;
+    }
   });
 });
 
@@ -257,8 +272,8 @@ describe("with the preference for reduced motion", { skip }, () => {
         assert.equal(acts.length, 8);
         for (const { id, headline, blank, height } of acts) {
           assert.ok(headline, `${id} has no readable headline`);
-          assert.ok(blank <= 200, `${id} ends ${blank} px after its last line`);
-          assert.ok(height < 3000, `${id} is ${height} px tall`);
+          assert.ok(blank <= MAX_BLANK_PX, `${id} ends ${blank} px after its last line`);
+          assert.ok(height < MAX_ACT_HEIGHT_PX, `${id} is ${height} px tall`);
         }
         // nothing is pinned or laid over the text: the page is as tall as the acts and the bar at the top
         assert.ok((await page.eval(`document.documentElement.scrollHeight`)) < acts.reduce((sum, a) => sum + a.height, 0) + 400);
@@ -282,8 +297,16 @@ describe("with the preference for reduced motion", { skip }, () => {
         const page = await open(search, { reducedMotion: true });
         const lang = search.includes("lang=es") ? "es" : "en";
         const other = lang === "es" ? "en" : "es";
-        const shown = await page.eval(`(() => { const readable = ${readable}; const a = [...document.querySelectorAll("#lang-switch a")]; return a.every(readable) && a.map((x) => x.dataset.lang + ":" + (x.getAttribute("aria-current") || "") + ":" + new URL(x.href).searchParams.get("lang")).join(" "); })()`);
-        assert.equal(shown, lang === "es" ? "es:page:es en::en" : "es::es en:page:en");
+        const switchLinks = await page.eval(`(() => {
+          const readable = ${readable};
+          const links = [...document.querySelectorAll("#lang-switch a")];
+          return { allReadable: links.every(readable), links: links.map((a) => ({ lang: a.dataset.lang, current: a.getAttribute("aria-current") || "", href: new URL(a.href).searchParams.get("lang") })) };
+        })()`);
+        assert.equal(switchLinks.allReadable, true, "a link of the language switch cannot be read");
+        assert.deepEqual(switchLinks.links, [
+          { lang: "es", current: lang === "es" ? "page" : "", href: "es" },
+          { lang: "en", current: lang === "en" ? "page" : "", href: "en" },
+        ]);
         assert.equal(await page.eval(`document.documentElement.lang`), lang);
         await page.eval(`document.querySelector('#lang-switch a[data-lang="${other}"]').click()`);
         await until(async () => {
@@ -326,7 +349,7 @@ describe("with the preference for reduced motion", { skip }, () => {
       });
     });
   }
-  it("opens the live panel with no transition", async () => {
+  it("gives the live panel no transition under reduced motion, and one without it", async () => {
     const page = await open("", { reducedMotion: true });
     assert.equal(await page.eval(`getComputedStyle(document.getElementById("try")).transitionDuration`), "0s");
     await page.close();
@@ -359,8 +382,8 @@ describe("without JavaScript", { skip }, () => {
         return { id: act.id, blank: Math.round(act.getBoundingClientRect().bottom - end), height: act.getBoundingClientRect().height };
       })`);
       for (const { id, blank, height } of tails) {
-        assert.ok(blank <= 200, `${id} ends ${blank} px after its last line`);
-        assert.ok(height < 3000, `${id} is ${height} px tall`);
+        assert.ok(blank <= MAX_BLANK_PX, `${id} ends ${blank} px after its last line`);
+        assert.ok(height < MAX_ACT_HEIGHT_PX, `${id} is ${height} px tall`);
       }
       await page.close();
     });

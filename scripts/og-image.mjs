@@ -18,12 +18,20 @@ const CARD = { width: 1200, height: 630, quality: 82 };
 const ICON = { size: 180 };
 
 const html = readSite("index.html");
-const favicon = decodeURIComponent(html.match(/<link rel="icon" href="data:image\/svg\+xml,([^"]+)"/)[1]).replaceAll("'", '"');
-const background = html.match(/<meta name="theme-color" content="(#[0-9a-f]{6})"/i)[1];
+
+// the first group of a pattern that must be in index.html; says which one is missing instead of a TypeError on null
+function fromIndex(pattern, what) {
+  const found = html.match(pattern);
+  if (!found) throw new Error(`index.html: ${what} is missing`);
+  return found[1];
+}
+const favicon = decodeURIComponent(fromIndex(/<link rel="icon" href="data:image\/svg\+xml,([^"]+)"/, '<link rel="icon"> with a data:image/svg+xml href')).replaceAll("'", '"');
+const background = fromIndex(/<meta name="theme-color" content="(#[0-9a-f]{6})"/i, '<meta name="theme-color"> with a #rrggbb colour');
 
 const server = await serveSite();
-const chrome = await launchChrome(CARD);
+let chrome;
 try {
+  chrome = await launchChrome(CARD);
   // the card: the first frame of the story, once the headline has finished rising and the fonts are in
   const page = await chrome.newPage({ width: CARD.width, height: CARD.height });
   await page.goto(`${server.origin}/`);
@@ -43,7 +51,7 @@ try {
   writeFileSync(join(SITE, "assets/apple-touch-icon.png"), Buffer.from(icon.data, "base64"));
   await iconPage.close();
 } finally {
-  await chrome.close();
+  await chrome?.close();
   await server.close();
 }
 console.log("wrote site/assets/og.jpg and site/assets/apple-touch-icon.png");

@@ -21,6 +21,13 @@ const css = readSite("assets/css/main.css");
 const tags = startTags(html);
 const ENTRY = tags.find((t) => t.name === "script" && t.attrs.type === "module").attrs.src;
 
+/** The first group of a pattern that has to be in a text; the failure says what is missing instead of a TypeError on null. */
+function captured(text, pattern, what) {
+  const found = text.match(pattern);
+  assert.ok(found, `${what} is not in the text this check reads`);
+  return found[1];
+}
+
 const stripCssComments = (text) => text.replace(/\/\*[\s\S]*?\*\//g, "");
 const external = /^(?:[a-z][a-z0-9+.-]*:)?\/\//i;
 const bare = (ref) => ref.split(/[?#]/)[0];
@@ -165,8 +172,8 @@ describe("the vendored fonts", () => {
 
   it("weigh what the README and DESIGN.md say", () => {
     const total = rows.reduce((sum, r) => sum + r.bytes, 0);
-    const readme = Number(read("README.md").match(/(\d+) KB in total/)[1]);
-    const design = Number(read("docs/DESIGN.md").match(/(\d+) KB together/)[1]);
+    const readme = Number(captured(read("README.md"), /(\d+) KB in total/, "README.md: the weight of the fonts (<n> KB in total)"));
+    const design = Number(captured(read("docs/DESIGN.md"), /(\d+) KB together/, "docs/DESIGN.md: the weight of the fonts (<n> KB together)"));
     assert.equal(readme, Math.round(total / 1024));
     assert.equal(design, Math.round(total / 1024));
     assert.match(notes, new RegExp(`Total: ${total} bytes`));
@@ -177,6 +184,8 @@ describe("site/data/receipts.json", () => {
   const receipts = JSON.parse(readSite("data/receipts.json"));
   // the fields the story reads: machine.js for the three counters and i18n.js for the Spanish note
   const readByTheStory = { rust_lines: "machine.js", offline_tests: "machine.js", dependencies: "machine.js", rust_files: "i18n.js", counted_on: "machine.js" };
+  const SOURCE_OF = { "machine.js": "assets/js/scenes/machine.js", "i18n.js": "assets/js/i18n.js" };
+  const withoutComments = (text) => text.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
 
   it("has every field the story reads, as a count or a date", () => {
     for (const key of Object.keys(readByTheStory)) {
@@ -187,8 +196,9 @@ describe("site/data/receipts.json", () => {
 
   it("is still read under those names by the scripts", () => {
     for (const [key, file] of Object.entries(readByTheStory)) {
-      const source = readSite(file === "machine.js" ? "assets/js/scenes/machine.js" : "assets/js/i18n.js");
-      assert.ok(source.includes(key), `${file} no longer reads ${key}`);
+      assert.ok(SOURCE_OF[file], `${file} is not a file this check knows how to find`);
+      // read as a property of the receipts (j.rust_lines), in code and not in a comment
+      assert.match(withoutComments(readSite(SOURCE_OF[file])), new RegExp(`\\.${key}\\b`), `${file} no longer reads ${key}`);
     }
   });
 
@@ -199,7 +209,7 @@ describe("site/data/receipts.json", () => {
 
 describe("the code the story cites", () => {
   // The demo and the cited files are one statement about one version of jobbot: the commit build-demo.py wrote down.
-  const built = readSite("demo/BUILD.txt").match(/^commit: ([0-9a-f]{7,40})$/m)[1];
+  const built = captured(readSite("demo/BUILD.txt"), /^commit: ([0-9a-f]{7,40})$/m, "demo/BUILD.txt: the line commit: <hash>");
   const blob = /https:\/\/github\.com\/gonzalo-rosas-rojas\/jobbot\/blob\/([^/"')\s]+)\/([^"')\s#]+)/g;
 
   const cited = [html, read("docs/DESIGN.md"), readSite("assets/fonts/VENDORED.md")].flatMap((text) => [...text.matchAll(blob)]);
@@ -221,9 +231,13 @@ describe("the code the story cites", () => {
   });
 
   it("shows, for each of the five rules, the path its link opens", () => {
-    const rules = [...html.matchAll(/<li><p>[^<]+<\/p><code><a href="([^"]+)">([^<]+)<\/a><\/code><\/li>/g)];
-    assert.equal(rules.length, 5);
-    for (const [, href, shown] of rules) assert.ok(href.endsWith(`/${shown}`), `${shown} is shown, ${href} is opened`);
+    const start = html.indexOf('<ol class="rules">');
+    assert.ok(start >= 0, "the list of the five rules is not in index.html");
+    const list = html.slice(start, html.indexOf("</ol>", start));
+    assert.equal((list.match(/<li\b/g) ?? []).length, 5, "the list does not have five rules");
+    const links = [...list.matchAll(/<a\b[^>]*\bhref="([^"]+)"[^>]*>([^<]+)<\/a>/g)];
+    assert.equal(links.length, 5, "each of the five rules needs one link whose text is its path");
+    for (const [, href, shown] of links) assert.ok(href.endsWith(`/${shown}`), `${shown} is shown, ${href} is opened`);
   });
 });
 
@@ -269,9 +283,9 @@ describe("who the page is by, and where a reader goes next", () => {
 
   it("has Spanish text for the next step: its sentence and the three link labels", () => {
     assert.match(i18n, /\["\.next \.next-lead",\s*"[^"]+"\]/, "the next step's sentence has no Spanish text");
-    const labels = i18n.match(/\["\.next a",\s*\[([^\]]*)\]\]/);
-    assert.ok(labels, "the next step's links have no Spanish labels");
-    assert.equal(labels[1].split(",").filter((s) => s.trim()).length, 3);
+    const labels = JSON.parse(`[${captured(i18n, /\["\.next a",\s*\[([^\]]*)\]\]/, "the next step's Spanish link labels")}]`);
+    assert.equal(labels.length, 3);
+    assert.ok(labels.every((label) => label.trim()), "a Spanish link label is empty");
   });
 
   it("holds no mailto: address anywhere in the page or its scripts", () => {
@@ -322,7 +336,7 @@ describe("the preview when the address is shared", () => {
   const CANONICAL = "https://gonzalo-rosas-rojas.github.io/jobbot-showcase/";
   const meta = (key, value) => tags.find((t) => t.name === "meta" && t.attrs[key] === value)?.attrs.content;
   const link = (rel, extra = {}) => tags.find((t) => t.name === "link" && t.attrs.rel === rel && Object.entries(extra).every(([k, v]) => t.attrs[k] === v))?.attrs.href;
-  const title = html.match(/<title>([^<]*)<\/title>/)[1];
+  const title = captured(html, /<title>([^<]*)<\/title>/, "index.html: the <title>");
   const description = meta("name", "description");
 
   it("has every Open Graph and Twitter tag, none of them empty", () => {
@@ -330,6 +344,9 @@ describe("the preview when the address is shared", () => {
       assert.ok(meta("property", property), `${property} is missing or empty`);
     }
     for (const name of ["twitter:card", "twitter:title", "twitter:description", "twitter:image"]) assert.ok(meta("name", name), `${name} is missing or empty`);
+  });
+
+  it("is a website, shown as a large image card", () => {
     assert.equal(meta("property", "og:type"), "website");
     assert.equal(meta("name", "twitter:card"), "summary_large_image");
   });
