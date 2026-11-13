@@ -8,6 +8,7 @@ import { dockGeometry } from "../rig.js";
 import { t as tr } from "../i18n.js";
 
 const WORD = tr("honest.word");
+const PAPER_COVER_AT = 0.55; // the share of the window the sun has covered when the page counts as paper
 
 export function createHonest(root) {
   const paper = root.querySelector(".paper");
@@ -43,12 +44,12 @@ export function createHonest(root) {
       paper.style.clipPath = `circle(${r.toFixed(1)}px at ${cx.toFixed(1)}px ${cy.toFixed(1)}px)`;
 
       const cover = r / reach;
-      const now = cover > 0.55;
-      if (now !== onPaper) {
-        onPaper = now;
-        html.classList.toggle("on-paper", now);
+      const covered = cover > PAPER_COVER_AT;
+      if (covered !== onPaper) {
+        onPaper = covered;
+        html.classList.toggle("on-paper", covered);
       }
-      html.classList.toggle("paper-rising", p > 0.04 && !now);
+      html.classList.toggle("paper-rising", p > 0.04 && !covered);
 
       letters.forEach((l, i) => {
         const k = smooth(0.2 + i * 0.022, 0.34 + i * 0.022, p);

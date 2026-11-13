@@ -29,7 +29,7 @@ export function createForm(root) {
   let fit = 1;
   let fitKey = "";
   const measure = (vw, vh) => {
-    const key = vw + "x" + vh;
+    const key = vw + "x" + vh; // the free room depends on the height too
     if (key === fitKey) return;
     fitKey = key;
     if (!isPhone(vw)) {

@@ -3,6 +3,9 @@
 
 import { isPhone, smooth, reducedMotion } from "../util.js";
 
+const FIRST_LETTER_MS = 260; // the headline waits this long after load before its first letter rises...
+const LETTER_MS = 30; // ...and each next letter follows this much later
+
 function splitLetters(root) {
   let i = 0;
   root.querySelectorAll("[data-split]").forEach((node) => {
@@ -28,7 +31,7 @@ function splitLetters(root) {
         outer.className = "ch";
         const inner = document.createElement("i");
         inner.textContent = c;
-        inner.style.animationDelay = 260 + i * 30 + "ms";
+        inner.style.animationDelay = FIRST_LETTER_MS + i * LETTER_MS + "ms";
         outer.append(inner);
         w.append(outer);
         i++;

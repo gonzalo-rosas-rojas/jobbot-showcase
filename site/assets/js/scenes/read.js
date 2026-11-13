@@ -7,6 +7,7 @@ import { isPhone, clamp, fmtCount, smooth, easeOutExpo, mulberry32, track } from
 
 const N = 412;
 const BINS = 40;
+const MAX_SCORE = 100; // the scale of a score, and of the slider
 
 // The sample is synthetic: a bell centred near CENTER, SPREAD points wide, with a longer right tail
 // (TAIL_CHANCE of the offers get up to TAIL_LEN extra points). The seed is fixed so every visit sees the same offers.
@@ -38,7 +39,7 @@ export function createRead(root) {
   const hist = root.querySelector(".hist");
   const read = root.querySelector("#s-read");
   const pass = root.querySelector("#s-pass");
-  const top = root.querySelector("#s-top");
+  const topScore = root.querySelector("#s-top");
   const thEl = root.querySelector("#s-th");
   const knob = root.querySelector(".knob");
   const fill = root.querySelector(".slider-fill");
@@ -47,9 +48,9 @@ export function createRead(root) {
 
   // histogram: BINS bars, heights from the sample
   const counts = new Array(BINS).fill(0);
-  for (const s of scores) counts[Math.min(BINS - 1, Math.floor((s / 100) * BINS))]++;
+  for (const s of scores) counts[Math.min(BINS - 1, Math.floor((s / MAX_SCORE) * BINS))]++;
   const maxC = Math.max(...counts);
-  const binCenters = counts.map((_, i) => Math.round(((i + 0.5) / BINS) * 100));
+  const binCenters = counts.map((_, i) => Math.round(((i + 0.5) / BINS) * MAX_SCORE));
   const bars = counts.map((c) => {
     const b = document.createElement("i");
     b.style.setProperty("--h", (c / maxC).toFixed(3));
@@ -79,7 +80,7 @@ export function createRead(root) {
     trackW = sliderTrack.offsetWidth;
     dpr = window.devicePixelRatio || 1;
   };
-  const onPixel = (px) => Math.round(px * dpr) / dpr;
+  const toDevicePixel = (px) => Math.round(px * dpr) / dpr;
 
   return {
     resize: measure,
@@ -101,11 +102,11 @@ export function createRead(root) {
       const th = Math.round(track([[0, DEFAULT_THRESHOLD], [0.3, DEFAULT_THRESHOLD], [0.5, TIGHT_THRESHOLD], [0.72, TIGHT_THRESHOLD], [0.88, DEFAULT_THRESHOLD], [1, DEFAULT_THRESHOLD]], p));
       const above = Math.round(countAbove(th) * smooth(0.06, 0.5, p));
       pass.textContent = fmtCount(above);
-      top.textContent = String(scores[scores.length - 1]);
+      topScore.textContent = String(scores[scores.length - 1]);
       thEl.textContent = String(th);
-      const pos = th / 100;
+      const pos = th / MAX_SCORE;
       if (!trackW) measure();
-      const at = onPixel(pos * trackW);
+      const at = toDevicePixel(pos * trackW);
       knob.style.transform = `translate3d(${at.toFixed(2)}px,0,0)`;
       fill.style.transform = `scaleX(${(at / trackW).toFixed(5)})`;
       if (th !== lastTh) {

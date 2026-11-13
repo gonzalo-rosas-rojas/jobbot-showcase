@@ -7,6 +7,8 @@ import { t as tr } from "../i18n.js";
 
 const SEND_START = 0.18; // scroll progress at which the button starts sending...
 const SEND_END = 0.32; // ...and at which it has sent
+const FIRST_APPROVAL_AT = 0.34; // the first of the five squares fills here...
+const APPROVAL_SPAN = 0.12; // ...and each next one this much later
 
 export function createApprove(root) {
   const copy = root.querySelector(".a7-copy");
@@ -16,7 +18,8 @@ export function createApprove(root) {
   const bar = btn.querySelector(".bar");
   const squares = [...root.querySelectorAll(".five i")];
   const label = root.querySelector(".five-label");
-  let lastText = "";
+  const SQUARES = squares.length; // five: the gate's first_n_reviewed
+  let lastState = "";
   let lastCount = -1;
 
   return {
@@ -38,20 +41,20 @@ export function createApprove(root) {
       const sending = smooth(SEND_START, SEND_END, p);
       bar.style.transform = `scaleX(${sending.toFixed(3)})`;
       const state = p < SEND_START ? "idle" : p < SEND_END ? "sending" : "sent";
-      if (state !== lastText) {
-        lastText = state;
+      if (state !== lastState) {
+        lastState = state;
         lab.textContent = tr("approve." + state);
         btn.classList.toggle("is-sent", state === "sent");
         card.classList.toggle("is-sent", state === "sent");
       }
 
       // five approvals, one after another
-      const n = p < 0.34 ? 0 : clamp(Math.floor((p - 0.34) / 0.12) + 1, 0, 5);
+      const n = p < FIRST_APPROVAL_AT ? 0 : clamp(Math.floor((p - FIRST_APPROVAL_AT) / APPROVAL_SPAN) + 1, 0, SQUARES);
       if (n !== lastCount) {
         lastCount = n;
         squares.forEach((s, i) => s.classList.toggle("on", i < n));
-        label.textContent = n === 5 ? tr("approve.done") : tr("approve.count", n);
-        label.classList.toggle("is-done", n === 5);
+        label.textContent = n === SQUARES ? tr("approve.done") : tr("approve.count", n);
+        label.classList.toggle("is-done", n === SQUARES);
       }
     },
   };
