@@ -1,9 +1,12 @@
 // The world behind everything. It changes with the hour of the night shift: dusk, deep night, dawn, and
 // a city skyline whose windows go dark while the bot keeps working and come back on at the end.
-// A fixed canvas, drawn when the hour changes and at ~20 fps (twinkle) while the tab is visible.
+// A fixed canvas, redrawn every FRAME_MS (~20 fps, for the twinkle) while the tab is visible; the hour and the scroll
+// position only change what that redraw paints.
 // Nothing here is an image: stars, gradient and buildings are generated from a fixed seed.
 
 import { mixRgb, rgb, mulberry32, clamp, track, reducedMotion } from "./util.js";
+
+const FRAME_MS = 50;
 
 // [nightT, top, horizon, warm glow colour, warm alpha, stars alpha]
 const STOPS = [
@@ -34,15 +37,16 @@ function sample(nightT) {
   };
 }
 
-function makeLayer(rand, minH, maxH, minW, maxW, winSize, gap) {
+/** One skyline layer: building heights and widths in the given ranges; windows on a grid of `winPitch` + `gap` px. */
+function makeLayer(rand, { minH, maxH, minW, maxW, winPitch, gap }) {
   const buildings = [];
   let x = -40;
   while (x < 2600) {
     const w = minW + rand() * (maxW - minW);
     const h = minH + rand() * rand() * (maxH - minH) + (maxH - minH) * 0.1 * rand();
     const wins = [];
-    for (let wx = 6; wx < w - winSize - 3; wx += winSize + gap) {
-      for (let wy = 8; wy < h - winSize - 4; wy += winSize + gap + 2) {
+    for (let wx = 6; wx < w - winPitch - 3; wx += winPitch + gap) {
+      for (let wy = 8; wy < h - winPitch - 4; wy += winPitch + gap + 2) {
         if (rand() < 0.82) wins.push({ x: wx, y: wy, thr: rand() });
       }
     }
@@ -63,16 +67,15 @@ export function createSky(canvas) {
     ph: rand() * Math.PI * 2,
     sp: 0.4 + rand() * 1.6,
   }));
-  const far = makeLayer(rand, 40, 170, 30, 70, 2.2, 3);
-  const mid = makeLayer(rand, 50, 230, 40, 90, 3, 4);
-  const near = makeLayer(rand, 30, 130, 60, 130, 4, 6);
+  const far = makeLayer(rand, { minH: 40, maxH: 170, minW: 30, maxW: 70, winPitch: 2.2, gap: 3 });
+  const mid = makeLayer(rand, { minH: 50, maxH: 230, minW: 40, maxW: 90, winPitch: 3, gap: 4 });
+  const near = makeLayer(rand, { minH: 30, maxH: 130, minW: 60, maxW: 130, winPitch: 4, gap: 6 });
 
   let w = 0;
   let h = 0;
   let dpr = 1;
   let nightT = 0;
   let scrollY = 0;
-  let timer = 0;
   const still = reducedMotion();
 
   function resize() {
@@ -84,7 +87,8 @@ export function createSky(canvas) {
     draw(performance.now());
   }
 
-  function skyline(layer, baseY, scale, offset, body, winRgb, winAlpha, lit) {
+  // style: { scale, offset, body (fill), winRgb ("r,g,b"), winAlpha, lit (share of lit windows), win (drawn window size) }
+  function skyline(layer, baseY, { scale, offset, body, winRgb, winAlpha, lit, win }) {
     for (const b of layer) {
       const bx = b.x * scale - offset;
       if (bx > w + 10 || bx + b.w * scale < -10) continue;
@@ -96,8 +100,7 @@ export function createSky(canvas) {
         const a = clamp((lit - wn.thr) / 0.1) * winAlpha;
         if (a < 0.03) continue;
         g.fillStyle = `rgba(${winRgb},${a.toFixed(3)})`;
-        const s = layer === near ? 3.4 : layer === mid ? 2.6 : 1.8;
-        g.fillRect(bx + wn.x * scale, baseY - bh + wn.y * scale, s * scale, s * scale * 1.15);
+        g.fillRect(bx + wn.x * scale, baseY - bh + wn.y * scale, win * scale, win * scale * 1.15);
       }
     }
   }
@@ -138,20 +141,19 @@ export function createSky(canvas) {
     const unit = clamp(h / 900, 0.7, 1.5);
     const baseY = h + 2;
     const body = (k) => `rgb(${mixRgb(s.top, s.hor, k).map((v) => Math.round(v * 0.55)).join(",")})`;
-    skyline(far, baseY, unit * 0.9, 40 + scrollY * 0.004, body(0.55), "255,214,150", 0.35, lit * 0.9);
-    skyline(mid, baseY, unit, 140 + scrollY * 0.01, body(0.25), "255,205,130", 0.6, lit);
-    skyline(near, baseY, unit * 1.05, 300 + scrollY * 0.02, body(0.0), "255,196,110", 0.85, lit * 0.8);
+    skyline(far, baseY, { scale: unit * 0.9, offset: 40 + scrollY * 0.004, body: body(0.55), winRgb: "255,214,150", winAlpha: 0.35, lit: lit * 0.9, win: 1.8 });
+    skyline(mid, baseY, { scale: unit, offset: 140 + scrollY * 0.01, body: body(0.25), winRgb: "255,205,130", winAlpha: 0.6, lit, win: 2.6 });
+    skyline(near, baseY, { scale: unit * 1.05, offset: 300 + scrollY * 0.02, body: body(0.0), winRgb: "255,196,110", winAlpha: 0.85, lit: lit * 0.8, win: 3.4 });
   }
 
   function loop() {
     if (document.visibilityState === "visible") draw(performance.now());
-    timer = window.setTimeout(loop, 50);
+    window.setTimeout(loop, FRAME_MS);
   }
 
   window.addEventListener("resize", resize);
   resize();
   if (!still) loop();
-  void timer;
 
   return {
     update(t, sy) {
