@@ -56,75 +56,90 @@ export function createLayers(root) {
     return smooth(b0 + 0.004, b0 + 0.02, p) * (1 - smooth(b1 - 0.022, b1 - 0.006, p));
   };
 
+  function placeCopy(inn, out, vis) {
+    copy.style.opacity = vis.toFixed(3);
+    copy.style.transform = `translate3d(0,${((1 - inn) * 5 - out * 4).toFixed(2)}vh,0)`;
+  }
+
+  function placeStack(vw, vh, narrow, inn, vis) {
+    const fitTo = narrow ? FIT_PHONE : FIT_WIDE;
+    const k = Math.min((fitTo.w * vw) / STACK_W, (fitTo.h * vh) / STACK_H);
+    const cx = narrow ? vw * 0.5 : vw * 0.575;
+    const cy = narrow ? vh * 0.33 : vh * 0.53;
+    const kk = k * lerp(0.9, 1, inn);
+    stack.style.transform = `translate3d(${(cx - SW / 2).toFixed(1)}px,${(cy - SH / 2).toFixed(1)}px,0) scale(${kk.toFixed(4)})`;
+    stack.style.opacity = vis.toFixed(3);
+    stack.style.visibility = vis < 0.01 ? "hidden" : "visible";
+  }
+
+  /** the plates come apart (`e` is how far), one is the active one, and the captions swap */
+  function placePlates(p, e) {
+    const some = smooth(A0 - 0.03, A0, p);
+    let act = -1;
+    if (p >= A0 && p < A1 + 0.0001) act = Math.min(N - 1, Math.floor((p - A0) / SPAN));
+
+    for (let i = 0; i < N; i++) {
+      const w = on(i, p, 0.03);
+      const z = (2 - i) * GAP * e + 26 * w * e;
+      plates[i].style.transform = `translateZ(${z.toFixed(1)}px)`;
+      plates[i].style.opacity = lerp(1, lerp(0.42, 1, w), some).toFixed(3);
+      const c = cap(i, p);
+      steps[i].style.opacity = c.toFixed(3);
+      steps[i].style.transform = `translate3d(0,${((1 - c) * 1.4).toFixed(2)}vh,0)`;
+    }
+    if (act !== active) {
+      active = act;
+      plates.forEach((pl, i) => pl.classList.toggle("is-active", i === act));
+      tags.forEach((t, i) => t.classList.toggle("on", i === act));
+      paths.forEach((pt, i) => pt.classList.toggle("on", i === act));
+      pips.forEach((pp, i) => pp.classList.toggle("on", i <= act));
+    }
+  }
+
+  /** the score counts while its own plate takes the stage */
+  function countScore(p) {
+    const sc = Math.round(SCORE * smooth(A0 + SPAN - 0.012, A0 + SPAN + 0.07, p));
+    if (sc !== lastScore) {
+      lastScore = sc;
+      num.textContent = String(sc);
+      tagScore.textContent = sc + " / 100";
+      scorePlate.style.setProperty("--s", (sc / 100).toFixed(3));
+    }
+    bars.forEach((b, i) => b.style.setProperty("--k", smooth(A0 + SPAN + i * 0.006, A0 + SPAN + 0.06 + i * 0.006, p).toFixed(3)));
+  }
+
+  /** leader lines: from each plate's right corner straight to its tag */
+  function drawLeaders(p, vis) {
+    const show = smooth(0.22, 0.3, p) * vis;
+    const tx = tagList.offsetLeft;
+    for (let i = 0; i < N; i++) {
+      const r = anchors[i].getBoundingClientRect();
+      const ax = r.left;
+      const ay = r.top;
+      paths[i].setAttribute("d", `M${(ax - 3).toFixed(1)} ${ay.toFixed(1)}a3 3 0 1 0 6 0a3 3 0 1 0-6 0M${(ax + 3).toFixed(1)} ${ay.toFixed(1)}H${(tx - 2).toFixed(1)}`);
+      paths[i].style.opacity = show.toFixed(3);
+      tags[i].style.transform = `translate3d(0,${(ay - 21).toFixed(1)}px,0)`;
+      tags[i].style.opacity = show.toFixed(3);
+    }
+  }
+
   return {
     update(p, ctx, _cur, fx) {
       const { vw, vh } = ctx;
       const narrow = isPhone(vw);
-
       const inn = fx.inn;
       const out = fx.out;
       const vis = inn * (1 - out);
-      copy.style.opacity = vis.toFixed(3);
-      copy.style.transform = `translate3d(0,${((1 - inn) * 5 - out * 4).toFixed(2)}vh,0)`;
+      placeCopy(inn, out, vis);
 
       // the block comes apart
       const e = smooth(0.05, 0.28, p);
       layers.style.transform = `rotateX(${lerp(74, 62, e).toFixed(2)}deg) rotateZ(${lerp(-42, -18, e).toFixed(2)}deg)`;
 
-      const fitTo = narrow ? FIT_PHONE : FIT_WIDE;
-      const k = Math.min((fitTo.w * vw) / STACK_W, (fitTo.h * vh) / STACK_H);
-      const cx = narrow ? vw * 0.5 : vw * 0.575;
-      const cy = narrow ? vh * 0.33 : vh * 0.53;
-      const kk = k * lerp(0.9, 1, inn);
-      stack.style.transform = `translate3d(${(cx - SW / 2).toFixed(1)}px,${(cy - SH / 2).toFixed(1)}px,0) scale(${kk.toFixed(4)})`;
-      stack.style.opacity = vis.toFixed(3);
-      stack.style.visibility = vis < 0.01 ? "hidden" : "visible";
-
-      const some = smooth(A0 - 0.03, A0, p);
-      let act = -1;
-      if (p >= A0 && p < A1 + 0.0001) act = Math.min(N - 1, Math.floor((p - A0) / SPAN));
-
-      for (let i = 0; i < N; i++) {
-        const w = on(i, p, 0.03);
-        const z = (2 - i) * GAP * e + 26 * w * e;
-        plates[i].style.transform = `translateZ(${z.toFixed(1)}px)`;
-        plates[i].style.opacity = lerp(1, lerp(0.42, 1, w), some).toFixed(3);
-        const c = cap(i, p);
-        steps[i].style.opacity = c.toFixed(3);
-        steps[i].style.transform = `translate3d(0,${((1 - c) * 1.4).toFixed(2)}vh,0)`;
-      }
-      if (act !== active) {
-        active = act;
-        plates.forEach((pl, i) => pl.classList.toggle("is-active", i === act));
-        tags.forEach((t, i) => t.classList.toggle("on", i === act));
-        paths.forEach((pt, i) => pt.classList.toggle("on", i === act));
-        pips.forEach((pp, i) => pp.classList.toggle("on", i <= act));
-      }
-
-      // the score counts while its own plate takes the stage
-      const sc = Math.round(SCORE * smooth(A0 + SPAN - 0.012, A0 + SPAN + 0.07, p));
-      if (sc !== lastScore) {
-        lastScore = sc;
-        num.textContent = String(sc);
-        tagScore.textContent = sc + " / 100";
-        scorePlate.style.setProperty("--s", (sc / 100).toFixed(3));
-      }
-      bars.forEach((b, i) => b.style.setProperty("--k", smooth(A0 + SPAN + i * 0.006, A0 + SPAN + 0.06 + i * 0.006, p).toFixed(3)));
-
-      // leader lines: from each plate's right corner straight to its tag
-      if (!narrow) {
-        const show = smooth(0.22, 0.3, p) * vis;
-        const tx = tagList.offsetLeft;
-        for (let i = 0; i < N; i++) {
-          const r = anchors[i].getBoundingClientRect();
-          const ax = r.left;
-          const ay = r.top;
-          paths[i].setAttribute("d", `M${(ax - 3).toFixed(1)} ${ay.toFixed(1)}a3 3 0 1 0 6 0a3 3 0 1 0-6 0M${(ax + 3).toFixed(1)} ${ay.toFixed(1)}H${(tx - 2).toFixed(1)}`);
-          paths[i].style.opacity = show.toFixed(3);
-          tags[i].style.transform = `translate3d(0,${(ay - 21).toFixed(1)}px,0)`;
-          tags[i].style.opacity = show.toFixed(3);
-        }
-      }
+      placeStack(vw, vh, narrow, inn, vis);
+      placePlates(p, e);
+      countScore(p);
+      if (!narrow) drawLeaders(p, vis);
     },
   };
 }
