@@ -23,21 +23,27 @@ applyLanguage();
 // reduced motion and no scripts get ("still", here). The decision is made once and nothing below asks again.
 const STILL = document.documentElement.classList.contains("still");
 
-function startStory() {
-  const SCENES = { hero: createHero, read: createRead, layers: createLayers, form: createForm, machine: createMachine, follow: createFollow, approve: createApprove, honest: createHonest };
+const SCENES = { hero: createHero, read: createRead, layers: createLayers, form: createForm, machine: createMachine, follow: createFollow, approve: createApprove, honest: createHonest };
 
-  const dialHost = document.getElementById("dial");
-  const plane = document.getElementById("plane");
-  const iframe = plane.querySelector("iframe");
+const PANEL_NEAR = 0.03; // the story position (act index + progress) at which the panel starts loading regardless
+const PANEL_DEADLINE_MS = 4000;
+const IDLE_TIMEOUT_MS = 1000; // the browser may wait this long for an idle moment before it runs the start anyway
+const IDLE_FALLBACK_MS = 300; // without requestIdleCallback: a short wait instead
 
-  // The panel on the plane weighs more than the rest of the page together and is not on screen until the hero has been
-  // scrolled a little (rig.js starts fading it in at u 0.12). So it does not compete with the page's own files: it starts
-  // once the page has loaded and painted and the browser is idle, or sooner if the visitor scrolls toward it. The address
-  // is set here, not in the HTML, so that ?lang= of this address reaches the panel in its one request.
-  const PANEL_NEAR = 0.03; // the story position (act index + progress) at which the panel starts loading regardless
-  const PANEL_DEADLINE_MS = 4000;
-  const IDLE_TIMEOUT_MS = 1000; // the browser may wait this long for an idle moment before it runs the start anyway
-  const IDLE_FALLBACK_MS = 300; // without requestIdleCallback: a short wait instead
+/** Writes `value` into `el` only when it is not the one written last time; returns what is written now. */
+function writeIfChanged(el, value, last) {
+  if (value !== last) el.textContent = value;
+  return value;
+}
+
+/**
+ * Arranges for the panel's iframe to start loading, and returns the function that starts it at once (idempotent).
+ * The panel on the plane weighs more than the rest of the page together and is not on screen until the hero has been
+ * scrolled a little (rig.js starts fading it in at u 0.12). So it does not compete with the page's own files: it starts
+ * once the page has loaded and painted and the browser is idle, or sooner if the visitor scrolls toward it. The address
+ * is set here, not in the HTML, so that ?lang= of this address reaches the panel in its one request.
+ */
+function schedulePanelLoad(iframe) {
   let panelStarted = false;
   function startPanel() {
     if (panelStarted) return;
@@ -53,15 +59,12 @@ function startStory() {
     // runs once the document is parsed, so PANEL_DEADLINE_MS from here the panel starts regardless.
     window.setTimeout(afterFirstPaint, PANEL_DEADLINE_MS);
   }
+  return startPanel;
+}
 
-  const dial = createDial(dialHost);
-  const sky = createSky(document.getElementById("sky"));
-  const rig = createRig({ dialHost, dial, plane, iframe, heroCopy: document.querySelector(".a1-copy"), readCopy: document.querySelector(".a2-copy") });
-  const clockEl = document.getElementById("clock");
-  const labelEl = document.getElementById("act-label");
-  const progEl = document.getElementById("progress");
-
-  const acts = [...document.querySelectorAll(".act")].map((el) => {
+/** The acts of the page, each with the scene that animates it. */
+function buildActs() {
+  return [...document.querySelectorAll(".act")].map((el) => {
     const make = SCENES[el.dataset.scene];
     return {
       el,
@@ -71,6 +74,22 @@ function startStory() {
       scene: make ? make(el) : null,
     };
   });
+}
+
+function startStory() {
+  const dialHost = document.getElementById("dial");
+  const plane = document.getElementById("plane");
+  const iframe = plane.querySelector("iframe");
+  const startPanel = schedulePanelLoad(iframe);
+
+  const dial = createDial(dialHost);
+  const sky = createSky(document.getElementById("sky"));
+  const rig = createRig({ dialHost, dial, plane, iframe, heroCopy: document.querySelector(".a1-copy"), readCopy: document.querySelector(".a2-copy") });
+  const clockEl = document.getElementById("clock");
+  const labelEl = document.getElementById("act-label");
+  const progEl = document.getElementById("progress");
+
+  const acts = buildActs();
 
   const tryPanel = createTry();
   let lastLabel = "";
@@ -82,16 +101,8 @@ function startStory() {
       if (ctx.u > PANEL_NEAR) startPanel();
       sky.update(ctx.nightT, ctx.sy);
       rig.update(ctx);
-      const c = clockText(ctx.nightT);
-      if (c !== lastClock) {
-        lastClock = c;
-        clockEl.textContent = c;
-      }
-      const lab = acts[ctx.idx] ? acts[ctx.idx].label : "";
-      if (lab !== lastLabel) {
-        lastLabel = lab;
-        labelEl.textContent = lab;
-      }
+      lastClock = writeIfChanged(clockEl, clockText(ctx.nightT), lastClock);
+      lastLabel = writeIfChanged(labelEl, acts[ctx.idx] ? acts[ctx.idx].label : "", lastLabel);
       // the panel is on screen from act 2 on, so that is when "Use the panel" shows up in the HUD
       const seen = ctx.idx >= 1;
       if (seen !== panelSeen) {
