@@ -53,5 +53,6 @@ out = {"rust_lines": lines, "rust_files": files, "test_functions": tests,
        "counted_on": datetime.date.today().isoformat(),
        "note": "Counted from src/, tests/ and crates/ with scripts/receipts.py; tests are #[test] and #[tokio::test] attributes (offline = not #[ignore]), not a test run; dependencies are the distinct third-party crates in [dependencies] of Cargo.toml and crates/*/Cargo.toml."}
 dst = os.path.join(HERE, "..", "site", "data", "receipts.json")
-json.dump(out, open(dst, "w", encoding="utf-8"), indent=1)
+with open(dst, "w", encoding="utf-8") as f:
+    json.dump(out, f, indent=1)
 print(json.dumps(out, indent=1))
