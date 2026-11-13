@@ -11,7 +11,7 @@
 
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { launchChrome, until } from "../tests/lib/chrome.mjs";
+import { launchChrome, screenshot, until } from "../tests/lib/chrome.mjs";
 import { SITE, capture, readSite, serveSite } from "../tests/lib/site.mjs";
 
 const CARD = { width: 1200, height: 630, quality: 82 };
@@ -34,16 +34,14 @@ try {
   await page.waitFor(`document.querySelectorAll(".a1-copy .ch").length > 0`, "the headline to be split");
   await until(async () => (await page.eval(`document.getAnimations().filter((a) => a.playState === "running" && a.effect?.getComputedTiming().iterations !== Infinity).length`)) === 0, "the headline to finish rising");
   await page.frames(5);
-  const card = await page.send("Page.captureScreenshot", { format: "jpeg", quality: CARD.quality });
-  writeFileSync(join(SITE, "assets/og.jpg"), Buffer.from(card.data, "base64"));
+  writeFileSync(join(SITE, "assets/og.jpg"), await screenshot(page, { format: "jpeg", quality: CARD.quality }));
   await page.close();
 
   // the icon: the favicon drawing filling a square of the theme colour
   const iconPage = await chrome.newPage({ width: ICON.size, height: ICON.size });
   const markup = `<!doctype html><body style="margin:0;background:${background}">${favicon.replace("<svg", `<svg width="${ICON.size}" height="${ICON.size}"`)}</body>`;
   await iconPage.goto("data:text/html;charset=utf-8," + encodeURIComponent(markup));
-  const icon = await iconPage.send("Page.captureScreenshot", { format: "png" });
-  writeFileSync(join(SITE, "assets/apple-touch-icon.png"), Buffer.from(icon.data, "base64"));
+  writeFileSync(join(SITE, "assets/apple-touch-icon.png"), await screenshot(iconPage, { format: "png" }));
   await iconPage.close();
 } finally {
   await chrome?.close();

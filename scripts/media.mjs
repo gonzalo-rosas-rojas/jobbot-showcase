@@ -17,13 +17,15 @@
 
 import { writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { launchChrome } from "../tests/lib/chrome.mjs";
+import { launchChrome, screenshot } from "../tests/lib/chrome.mjs";
 import { ROOT, serveSite } from "../tests/lib/site.mjs";
 
 const SIZE = { width: 1440, height: 900 };
 const QUALITY = 82;
 // the panel's own entrance (it travels to the tab the story asks for) and the sun's last pixels take this long to finish
 const PANEL_SETTLE_MS = 3000;
+const SETTLE_FRAMES = 10; // frames drawn after the wait, before the scene is snapped to the scroll position once more
+const SHOT_FRAMES = 5; // frames drawn after that snap, before the screenshot
 
 // where in the story each still is taken: [file, act id, progress through the act]
 const MOMENTS = [
@@ -31,6 +33,21 @@ const MOMENTS = [
   ["shot-panel.jpg", "a2", 0.6],
   ["shot-dawn.jpg", "a8", 0.97],
 ];
+
+/** Scrolls to `progress` through act `act`, lets the page settle and writes the still to docs/`file`. */
+async function shoot(page, file, act, progress) {
+  const at = await page.eval(`(() => {
+    const el = document.getElementById("${act}");
+    return Math.round(el.getBoundingClientRect().top + scrollY + ${progress} * (el.offsetHeight - innerHeight));
+  })()`);
+  await page.eval(`window.scrollTo(0, ${at}); window.__night.snap()`);
+  await new Promise((r) => setTimeout(r, PANEL_SETTLE_MS));
+  await page.frames(SETTLE_FRAMES);
+  await page.eval(`window.__night.snap()`);
+  await page.frames(SHOT_FRAMES);
+  writeFileSync(join(ROOT, "docs", file), await screenshot(page, { format: "jpeg", quality: QUALITY }));
+  console.log(`wrote docs/${file}`);
+}
 
 const server = await serveSite();
 let chrome;
@@ -41,20 +58,7 @@ try {
   await page.waitFor(`document.documentElement.classList.contains("js") && document.fonts.status === "loaded"`, "the page to start");
   // the panel on the plane has to be in before the second still
   await page.waitFor(`(() => { const f = document.querySelector("#plane iframe"); return f.getAttribute("src") && f.contentDocument.readyState === "complete" && f.contentDocument.body?.children.length > 0; })()`, "the panel to load");
-  for (const [file, act, progress] of MOMENTS) {
-    const at = await page.eval(`(() => {
-      const el = document.getElementById("${act}");
-      return Math.round(el.getBoundingClientRect().top + scrollY + ${progress} * (el.offsetHeight - innerHeight));
-    })()`);
-    await page.eval(`window.scrollTo(0, ${at}); window.__night.snap()`);
-    await new Promise((r) => setTimeout(r, PANEL_SETTLE_MS));
-    await page.frames(10);
-    await page.eval(`window.__night.snap()`);
-    await page.frames(5);
-    const shot = await page.send("Page.captureScreenshot", { format: "jpeg", quality: QUALITY });
-    writeFileSync(join(ROOT, "docs", file), Buffer.from(shot.data, "base64"));
-    console.log(`wrote docs/${file}`);
-  }
+  for (const [file, act, progress] of MOMENTS) await shoot(page, file, act, progress);
   await page.close();
 } finally {
   await chrome?.close();
