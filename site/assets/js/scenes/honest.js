@@ -3,7 +3,8 @@
 // one giant word, and the five rules the code enforces, each with the file that enforces it.
 // Everything before this scene is quiet on purpose so that this one lands.
 
-import { clamp, lerp, smooth, easeInOut } from "../util.js";
+import { PHONE_MAX_W, lerp, smooth, easeInOut } from "../util.js";
+import { dockGeometry } from "../rig.js";
 import { t as tr } from "../i18n.js";
 
 const WORD = tr("honest.word");
@@ -31,15 +32,10 @@ export function createHonest(root) {
 
   return {
     update(p, ctx) {
-      const vw = ctx ? ctx.vw : window.innerWidth;
-      const vh = ctx ? ctx.vh : window.innerHeight;
-      const narrow = vw < 760;
+      const { vw, vh } = ctx;
 
-      // where the dial sits when docked (mirrors rig.js), so the sun rises from the very same place
-      const gutter = narrow ? 18 : Math.min(64, vw * 0.042);
-      const dock = narrow ? 84 : clamp(vw * 0.082, 86, 116);
-      const cx = vw - gutter - dock / 2 - 6;
-      const cy = 54 + dock / 2 + 6;
+      // where the dial sits when docked (the same place rig.js puts it), so the sun rises from there
+      const { x: cx, y: cy } = dockGeometry(vw);
       const reach = Math.hypot(Math.max(cx, vw - cx), Math.max(cy, vh - cy)) + 8;
       // the sun starts growing with the act (it is a few pixels at first, easeInOut), so that it is already
       // coming up when act 7 has finished leaving: no empty beat between the two

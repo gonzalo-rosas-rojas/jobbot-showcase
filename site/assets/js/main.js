@@ -36,13 +36,15 @@ function startStory() {
   // is set here, not in the HTML, so that ?lang= of this address reaches the panel in its one request.
   const PANEL_NEAR = 0.03; // the story position (act index + progress) at which the panel starts loading regardless
   const PANEL_DEADLINE_MS = 4000;
+  const IDLE_TIMEOUT_MS = 1000; // the browser may wait this long for an idle moment before it runs the start anyway
+  const IDLE_FALLBACK_MS = 300; // without requestIdleCallback: a short wait instead
   let panelStarted = false;
   function startPanel() {
     if (panelStarted) return;
     panelStarted = true;
     iframe.src = withLang(iframe.dataset.src);
   }
-  const whenIdle = (fn) => ("requestIdleCallback" in window ? window.requestIdleCallback(fn, { timeout: 1000 }) : window.setTimeout(fn, 300));
+  const whenIdle = (fn) => ("requestIdleCallback" in window ? window.requestIdleCallback(fn, { timeout: IDLE_TIMEOUT_MS }) : window.setTimeout(fn, IDLE_FALLBACK_MS));
   const afterFirstPaint = () => requestAnimationFrame(() => requestAnimationFrame(() => whenIdle(startPanel)));
   if (document.readyState === "complete") afterFirstPaint();
   else {
