@@ -8,15 +8,15 @@ import { mixRgb, rgb, mulberry32, clamp, track, reducedMotion } from "./util.js"
 
 const FRAME_MS = 50;
 
-// The sky at given hours of the night: its top and horizon colours, the warm glow colour and alpha, the stars' alpha.
+// The sky at given hours: top and horizon colours, the warm glow (colour, alpha) and the stars' alpha.
 const STOPS = [
-  { at: 0.0, top: "#0b1226", hor: "#222c50", warm: "#ff9440", warmA: 0.42, stars: 0.12 },
-  { at: 1.2, top: "#090e1d", hor: "#1c2441", warm: "#d9703a", warmA: 0.26, stars: 0.5 },
-  { at: 2.6, top: "#05080f", hor: "#0e1630", warm: "#3a4a7c", warmA: 0.1, stars: 0.9 },
-  { at: 10.0, top: "#04060b", hor: "#0a1224", warm: "#27386a", warmA: 0.07, stars: 1.0 },
-  { at: 12.6, top: "#070b17", hor: "#18203a", warm: "#5a5a8a", warmA: 0.14, stars: 0.75 },
-  { at: 14.0, top: "#101830", hor: "#3a4468", warm: "#ffb27a", warmA: 0.42, stars: 0.3 },
-  { at: 15.0, top: "#243050", hor: "#8c8da0", warm: "#ffd9a8", warmA: 0.55, stars: 0.05 },
+  { at: 0.0, top: "#0b1226", hor: "#222c50", warm: "#ff9440", warmAlpha: 0.42, starAlpha: 0.12 },
+  { at: 1.2, top: "#090e1d", hor: "#1c2441", warm: "#d9703a", warmAlpha: 0.26, starAlpha: 0.5 },
+  { at: 2.6, top: "#05080f", hor: "#0e1630", warm: "#3a4a7c", warmAlpha: 0.1, starAlpha: 0.9 },
+  { at: 10.0, top: "#04060b", hor: "#0a1224", warm: "#27386a", warmAlpha: 0.07, starAlpha: 1.0 },
+  { at: 12.6, top: "#070b17", hor: "#18203a", warm: "#5a5a8a", warmAlpha: 0.14, starAlpha: 0.75 },
+  { at: 14.0, top: "#101830", hor: "#3a4468", warm: "#ffb27a", warmAlpha: 0.42, starAlpha: 0.3 },
+  { at: 15.0, top: "#243050", hor: "#8c8da0", warm: "#ffd9a8", warmAlpha: 0.55, starAlpha: 0.05 },
 ];
 
 // fraction of lit windows through the night (people go to bed, then wake up)
@@ -32,8 +32,8 @@ function sample(nightT) {
     top: mixRgb(rgb(a.top), rgb(b.top), t),
     hor: mixRgb(rgb(a.hor), rgb(b.hor), t),
     warm: mixRgb(rgb(a.warm), rgb(b.warm), t),
-    warmA: a.warmA + (b.warmA - a.warmA) * t,
-    stars: a.stars + (b.stars - a.stars) * t,
+    warmAlpha: a.warmAlpha + (b.warmAlpha - a.warmAlpha) * t,
+    starAlpha: a.starAlpha + (b.starAlpha - a.starAlpha) * t,
   };
 }
 
@@ -110,13 +110,13 @@ export function createSky(canvas) {
     lg.addColorStop(0, `rgb(${s.top})`);
     lg.addColorStop(0.62, `rgb(${mixRgb(s.top, s.hor, 0.5)})`);
     lg.addColorStop(0.9, `rgb(${s.hor})`);
-    lg.addColorStop(1, `rgb(${mixRgb(s.hor, s.warm, 0.35 + s.warmA * 0.5)})`);
+    lg.addColorStop(1, `rgb(${mixRgb(s.hor, s.warm, 0.35 + s.warmAlpha * 0.5)})`);
     g.fillStyle = lg;
     g.fillRect(0, 0, w, h);
     // warm band hugging the horizon
     const hg = g.createRadialGradient(w * 0.5, h * 1.02, 0, w * 0.5, h * 1.02, Math.max(w * 0.75, h * 0.9));
-    hg.addColorStop(0, `rgba(${s.warm},${s.warmA})`);
-    hg.addColorStop(0.5, `rgba(${s.warm},${(s.warmA * 0.28).toFixed(3)})`);
+    hg.addColorStop(0, `rgba(${s.warm},${s.warmAlpha})`);
+    hg.addColorStop(0.5, `rgba(${s.warm},${(s.warmAlpha * 0.28).toFixed(3)})`);
     hg.addColorStop(1, `rgba(${s.warm},0)`);
     g.fillStyle = hg;
     g.fillRect(0, 0, w, h);
@@ -128,7 +128,7 @@ export function createSky(canvas) {
     const tw = now / 1000;
     for (const st of stars) {
       const y = (((st.y * h - drift) % h) + h) % h;
-      const a = st.a * s.stars * (still ? 1 : 0.72 + 0.28 * Math.sin(tw * st.sp + st.ph));
+      const a = st.a * s.starAlpha * (still ? 1 : 0.72 + 0.28 * Math.sin(tw * st.sp + st.ph));
       if (a < 0.02) continue;
       g.fillStyle = `rgba(236,232,221,${a.toFixed(3)})`;
       g.beginPath();
