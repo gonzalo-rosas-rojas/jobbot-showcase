@@ -405,3 +405,21 @@ describe("the phone breakpoint", () => {
     }
   });
 });
+
+describe("the receipts the machine room reads", () => {
+  globalThis.window ??= { location: { search: "" } };
+  const machine = import("../site/assets/js/scenes/machine.js");
+  const real = JSON.parse(readSite("data/receipts.json"));
+
+  it("accepts the real file", async () => {
+    const { isUsableReceipts } = await machine;
+    assert.equal(isUsableReceipts(real), true);
+  });
+
+  it("refuses what would write NaN or throw: nothing, a non-object, a missing or non-finite count", async () => {
+    const { isUsableReceipts } = await machine;
+    for (const bad of [null, undefined, 7, "x", [], {}, { ...real, offline_tests: undefined }, { ...real, rust_lines: "12" }, { ...real, dependencies: NaN }, { ...real, rust_files: null }]) {
+      assert.equal(isUsableReceipts(bad), false, JSON.stringify(bad));
+    }
+  });
+});

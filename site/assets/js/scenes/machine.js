@@ -17,13 +17,13 @@ const ROUTE = [[85, 72], [320, 72], [555, 72], [790, 72], [790, 150], [85, 150],
 const LEGS = ROUTE.slice(1).map((pt, i) => Math.hypot(pt[0] - ROUTE[i][0], pt[1] - ROUTE[i][1]));
 const TOTAL = LEGS.reduce((a, b) => a + b, 0);
 
-// the drawing's own size (SVG units) and the places the cameras look at
+// the drawing's size (SVG units) and where the cameras look
 const VIEW = { w: 880, h: 440 };
-const VIEW_MID_X = VIEW.w / 2; // the cameras end up centred on the picture's middle
-const PHONE_CLOSE_W = 440; // phones: the visible width while following the token (2x), pulling back to VIEW.w
-const LAYER_UNDER_Y_PHONE = 330; // phones: where the camera drops to look at the layer under the chain
-const LAYER_UNDER_Y_WIDE = 300; // wide screens: the same
-const PICTURE_MID_Y = 220; // where both end up, with the whole picture in view
+const VIEW_MID_X = VIEW.w / 2;
+const PHONE_CLOSE_W = 440; // phones: visible width while following the token, pulling back to VIEW.w
+const LAYER_UNDER_Y_PHONE = 330; // where the camera drops to see the layer under the chain
+const LAYER_UNDER_Y_WIDE = 300;
+const PICTURE_MID_Y = 220; // where both end up, the whole picture in view
 
 function onRoute(f) {
   let d = clamp(f) * TOTAL;
@@ -51,17 +51,25 @@ const writeFigures = (out, j, k = 1) => {
   out.deps.textContent = fmtCount(j.dependencies * k);
 };
 
-/** Reads data/receipts.json, writes the note under the figures and hands the numbers to `then`. A failure to read it is
- *  reported (with ?qa=1) and leaves the dashes; an error thrown by `then` is not that, and is left to show. */
+/** An object with the four counts as finite numbers: what the figures and the note are written from. */
+export function isUsableReceipts(j) {
+  return !!j && typeof j === "object" && ["rust_lines", "rust_files", "offline_tests", "dependencies"].every((key) => Number.isFinite(j[key]));
+}
+
+const UNUSABLE = "machine: data/receipts.json is not usable, the counters stay as dashes";
+
+/** Reads data/receipts.json, writes the note and hands the numbers to `then`. An unreadable or unusable file is reported
+ *  (with ?qa=1) and leaves the dashes; an error thrown by `then` is not, and is left to show. */
 function loadReceipts(note, then) {
   fetch("data/receipts.json")
     .then((r) => (r.ok ? r.json() : Promise.reject(new Error("HTTP " + r.status))))
     .then(
       (j) => {
-        if (j && j.counted_on) note.textContent = tr("machine.note", j);
+        if (!isUsableReceipts(j)) return qaWarn(UNUSABLE, j);
+        if (j.counted_on) note.textContent = tr("machine.note", j);
         then(j);
       },
-      (e) => qaWarn("machine: data/receipts.json is not usable, the counters stay as dashes", e),
+      (e) => qaWarn(UNUSABLE, e),
     );
 }
 
