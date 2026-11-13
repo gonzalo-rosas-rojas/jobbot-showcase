@@ -1,5 +1,9 @@
 // Reads the size of an image from its own header, so the checks need no image library.
 
+// inside a start-of-frame segment, counted from the 0xff of its marker: marker (2), length (2), precision (1), height (2), width (2)
+const SOF_HEIGHT_AT = 5;
+const SOF_WIDTH_AT = 7;
+
 /** { width, height } of a JPEG, from its first start-of-frame segment. */
 export function jpegSize(buffer) {
   if (buffer[0] !== 0xff || buffer[1] !== 0xd8) throw new Error("not a JPEG");
@@ -9,7 +13,7 @@ export function jpegSize(buffer) {
     const length = buffer.readUInt16BE(at + 2);
     // SOF0..SOF15, except DHT (c4), JPG (c8) and DAC (cc)
     if (marker >= 0xc0 && marker <= 0xcf && ![0xc4, 0xc8, 0xcc].includes(marker)) {
-      return { width: buffer.readUInt16BE(at + 7), height: buffer.readUInt16BE(at + 5) };
+      return { width: buffer.readUInt16BE(at + SOF_WIDTH_AT), height: buffer.readUInt16BE(at + SOF_HEIGHT_AT) };
     }
     at += 2 + length;
   }
