@@ -129,20 +129,22 @@ export function createMachine(root) {
     const [tx, ty] = onRoute(smooth(0.1, 0.52, p));
     const down = smooth(0.52, 0.62, p);
     const pullBack = smooth(0.7, 0.86, p);
-    const cx = lerp(lerp(tx, VIEW_MID_X, down), VIEW_MID_X, pullBack);
+    // a value that starts at `from`, goes to `downTo` as the camera drops, then to `pulledTo` as it pulls back
+    const settle = (from, downTo, pulledTo) => lerp(lerp(from, downTo, down), pulledTo, pullBack);
+    const cx = settle(tx, VIEW_MID_X, VIEW_MID_X);
     const { vw, vh } = ctx;
     if (isWide(vw, vh)) {
       camera.reset();
-      wideCam.measure(vw, vh);
+      const frame = wideCam.measure(vw, vh);
       // how close the camera wants to be, in window px per SVG unit: biggest on the first node, whole picture at the end
       const want = WIDE_CLOSE * (vh / 1080) * track([[0, 1.25], [0.1, 1.25], [0.3, 1], [0.5, 0.82], [0.62, 0.63], [0.7, 0.63], [0.86, 0], [1, 0]], p);
-      const zoom = wideCam.zoomFor(want);
+      const zoom = frame.zoomFor(want);
       // centred on the token itself: at this zoom the window shows the nodes around it, and the empty part ahead of it
       // is where the next node is about to appear
-      wideCam.aim({ cx: lerp(lerp(x, VIEW_MID_X, down), VIEW_MID_X, pullBack), cy: lerp(lerp(y, LAYER_UNDER_Y_WIDE, down), PICTURE_MID_Y, pullBack), zoom });
+      frame.aim({ cx: settle(x, VIEW_MID_X, VIEW_MID_X), cy: settle(y, LAYER_UNDER_Y_WIDE, PICTURE_MID_Y), zoom });
     } else {
       wideCam.reset();
-      if (isPhone(vw)) camera.aim(cx, lerp(lerp(ty, LAYER_UNDER_Y_PHONE, down), PICTURE_MID_Y, pullBack), lerp(PHONE_CLOSE_W, VIEW.w, pullBack));
+      if (isPhone(vw)) camera.aim(cx, settle(ty, LAYER_UNDER_Y_PHONE, PICTURE_MID_Y), lerp(PHONE_CLOSE_W, VIEW.w, pullBack));
       else camera.reset();
     }
   }

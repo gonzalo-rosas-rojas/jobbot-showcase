@@ -80,7 +80,7 @@ export function createRoomFit(camera, copy, box) {
 // and the token, follows the token, and pulls back until the whole picture is in the window. The art is still one
 // plain SVG and the move is still a viewBox, so nothing is drawn twice and the phone path above is untouched.
 // zoom 1 = the whole picture, centred in the window with a small margin; zoom 2 = twice as close.
-// Call `measure(vw, vh)` once per frame before `zoomFor` and `aim`: it is the only thing that reads the window's size.
+// `measure(vw, vh)` is the only thing that reads the window's size; it returns the frame whose `zoomFor` and `aim` to use.
 export function createWideCamera(box, svg, base) {
   const view = createViewport(svg, base);
   const FIT = 0.9; // share of the window the whole picture takes at zoom 1
@@ -97,16 +97,8 @@ export function createWideCamera(box, svg, base) {
   /** the scale (window px per SVG unit) at zoom 1 for the window as last measured; 0 while it has no size */
   const scale = () => (bw > 40 && bh > 40 ? Math.min(bw / base.w, bh / base.h) * FIT : 0);
 
-  return {
-    /** reads the window's size, again only when the browser window changed (or it had none yet) */
-    measure(vw, vh) {
-      const k = vw + "x" + vh;
-      if (k !== key || !bw) {
-        key = k;
-        bw = box.clientWidth;
-        bh = box.clientHeight;
-      }
-    },
+  // what the camera can do once the window's size is known: only `measure` hands it out, so it cannot be used unmeasured
+  const frame = {
     /** the zoom that gives `k` window px per SVG unit (never less than the whole picture) */
     zoomFor(k) {
       const k0 = scale();
@@ -129,6 +121,19 @@ export function createWideCamera(box, svg, base) {
       const x = clampTo(cx - w / 2, -SLACK * base.w, base.w * (1 + SLACK) - w);
       const y = clampTo(cy - h / 2, -SLACK * base.h, base.h * (1 + SLACK) - h);
       view.set(x, y, w, h);
+    },
+  };
+
+  return {
+    /** reads the window's size, again only when the browser window changed (or it had none yet); returns the frame to aim */
+    measure(vw, vh) {
+      const k = vw + "x" + vh;
+      if (k !== key || !bw) {
+        key = k;
+        bw = box.clientWidth;
+        bh = box.clientHeight;
+      }
+      return frame;
     },
     /** puts the whole picture back */
     reset: view.reset,
