@@ -121,14 +121,15 @@ export function createMachine(root) {
       const { vw, vh } = ctx;
       if (isWide(vw, vh)) {
         camera.reset();
+        wideCam.measure(vw, vh);
         // how close the camera wants to be, in window px per SVG unit: biggest on the first node, whole picture at the end
         const want = WIDE_CLOSE * (vh / 1080) * track([[0, 1.25], [0.1, 1.25], [0.3, 1], [0.5, 0.82], [0.62, 0.63], [0.7, 0.63], [0.86, 0], [1, 0]], p);
-        const zoom = wideCam.zoomFor(vw, vh, want);
+        const zoom = wideCam.zoomFor(want);
         // centred on the token itself: at this zoom the window shows the nodes around it, and the empty part ahead of it
         // is where the next node is about to appear
-        wideCam.aim(vw, vh, lerp(lerp(x, 440, down), 440, wide), lerp(lerp(y, 300, down), 220, wide), zoom);
+        wideCam.aim({ cx: lerp(lerp(x, 440, down), 440, wide), cy: lerp(lerp(y, 300, down), 220, wide), zoom });
       } else {
-        wideCam.off();
+        wideCam.reset();
         if (isPhone(vw)) camera.aim(cx, lerp(lerp(ty, 330, down), 220, wide), lerp(440, 880, wide));
         else camera.reset();
       }

@@ -68,13 +68,14 @@ export function createFollow(root) {
       if (isWide(vw, vh)) {
         // wide screens: the same camera in a window right of the copy, close on the token first, whole picture at the end
         camera.reset();
+        wideCam.measure(vw, vh);
         const want = WIDE_CLOSE * (vh / 1080) * track([[0, 1.25], [0.1, 1.25], [0.3, 1], [0.52, 0.8], [0.62, 0.6], [0.76, 0], [1, 0]], p);
-        const zoom = wideCam.zoomFor(vw, vh, want);
+        const zoom = wideCam.zoomFor(want);
         const away = smooth(0.5, 0.76, p);
         // the numbers sit above the line and the state names below it, so the camera looks between them
-        wideCam.aim(vw, vh, lerp(x, 450, away), lerp(130, 215, away), zoom);
+        wideCam.aim({ cx: lerp(x, 450, away), cy: lerp(130, 215, away), zoom });
       } else {
-        wideCam.off();
+        wideCam.reset();
         if (isPhone(vw)) camera.aim(lerp(XS[0] + lag * STOP_GAP + 80, 500, branch), lerp(Y, 230, branch), lerp(450, 560, branch));
         else camera.reset();
       }

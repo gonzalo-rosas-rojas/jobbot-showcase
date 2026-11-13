@@ -2,9 +2,10 @@
 // can't be read, so the camera zooms in, follows the action and pulls back for the whole picture. It is
 // only a viewBox, so the art stays plain SVG and wide screens never touch it.
 
-import { isPhone, clampTo } from "./util.js";
+import { clampTo, isPhone } from "./util.js";
 
 const RATIO = 0.78; // visible height / visible width
+const ROOM_GAP_PX = 12; // air between the diagram's box and the copy under it
 
 /** Wide screens: window px per SVG unit at the closest the camera gets (both diagram scenes). */
 export const WIDE_CLOSE = 2.3;
@@ -18,9 +19,26 @@ export function phoneRatio(room, width) {
   return Math.min(RATIO, Math.max(0.5, room / Math.max(1, width)));
 }
 
-export function createCamera(svg, base) {
+/** The viewBox of one diagram: `set` points it at a rectangle, `reset` puts the whole picture back (only if it was moved). */
+function createViewport(svg, base) {
   const home = `0 0 ${base.w} ${base.h}`;
-  let on = false;
+  let moved = false;
+  return {
+    set(x, y, w, h) {
+      moved = true;
+      svg.setAttribute("viewBox", `${x.toFixed(1)} ${y.toFixed(1)} ${w.toFixed(1)} ${h.toFixed(1)}`);
+    },
+    reset() {
+      if (moved) {
+        svg.setAttribute("viewBox", home);
+        moved = false;
+      }
+    },
+  };
+}
+
+export function createCamera(svg, base) {
+  const view = createViewport(svg, base);
   let ratio = RATIO;
 
   return {
@@ -29,19 +47,13 @@ export function createCamera(svg, base) {
     },
     // centre (cx, cy) and visible width w, in SVG units
     aim(cx, cy, w) {
-      on = true;
       const h = w * ratio;
       const x = clampTo(cx - w / 2, Math.min(0, base.w - w), Math.max(0, base.w - w));
       const y = clampTo(cy - h / 2, Math.min(0, base.h - h), Math.max(0, base.h - h));
-      svg.setAttribute("viewBox", `${x.toFixed(1)} ${y.toFixed(1)} ${w.toFixed(1)} ${h.toFixed(1)}`);
+      view.set(x, y, w, h);
     },
     /** puts the static view back */
-    reset() {
-      if (on) {
-        svg.setAttribute("viewBox", home);
-        on = false;
-      }
-    },
+    reset: view.reset,
   };
 }
 
@@ -55,7 +67,7 @@ export function createRoomFit(camera, copy, box) {
       const k = vw + "x" + vh;
       if (k === key) return;
       key = k;
-      if (isPhone(vw)) camera.setRatio(phoneRatio(copy.offsetTop - 12 - box.offsetTop, box.offsetWidth));
+      if (isPhone(vw)) camera.setRatio(phoneRatio(copy.offsetTop - ROOM_GAP_PX - box.offsetTop, box.offsetWidth));
     },
     reset() {
       key = "";
@@ -68,8 +80,9 @@ export function createRoomFit(camera, copy, box) {
 // and the token, follows the token, and pulls back until the whole picture is in the window. The art is still one
 // plain SVG and the move is still a viewBox, so nothing is drawn twice and the phone path above is untouched.
 // zoom 1 = the whole picture, centred in the window with a small margin; zoom 2 = twice as close.
+// Call `measure(vw, vh)` once per frame before `zoomFor` and `aim`: it is the only thing that reads the window's size.
 export function createWideCamera(box, svg, base) {
-  const home = `0 0 ${base.w} ${base.h}`;
+  const view = createViewport(svg, base);
   const FIT = 0.9; // share of the window the whole picture takes at zoom 1
   const SLACK = 0.06; // how far past the picture's edge the camera may look, as a share of its size
   const FADE_MIN_PX = 28; // width of the window's left-edge fade with the whole picture in view
@@ -79,28 +92,29 @@ export function createWideCamera(box, svg, base) {
   let bw = 0;
   let bh = 0;
   let key = "";
-  let on = false;
   let lastFade = "";
 
+  /** the scale (window px per SVG unit) at zoom 1 for the window as last measured; 0 while it has no size */
+  const scale = () => (bw > 40 && bh > 40 ? Math.min(bw / base.w, bh / base.h) * FIT : 0);
+
   return {
-    /** the scale (window px per SVG unit) at zoom 1 for the window as it is now; 0 while it has no size */
-    base(vw, vh) {
+    /** reads the window's size, again only when the browser window changed (or it had none yet) */
+    measure(vw, vh) {
       const k = vw + "x" + vh;
       if (k !== key || !bw) {
         key = k;
         bw = box.clientWidth;
         bh = box.clientHeight;
       }
-      return bw > 40 && bh > 40 ? Math.min(bw / base.w, bh / base.h) * FIT : 0;
     },
     /** the zoom that gives `k` window px per SVG unit (never less than the whole picture) */
-    zoomFor(vw, vh, k) {
-      const k0 = this.base(vw, vh);
+    zoomFor(k) {
+      const k0 = scale();
       return k0 ? Math.max(1, k / k0) : 1;
     },
     // centre (cx, cy) in SVG units, zoom as above
-    aim(vw, vh, cx, cy, zoom) {
-      const k0 = this.base(vw, vh);
+    aim({ cx, cy, zoom }) {
+      const k0 = scale();
       if (!k0) return;
       const k = k0 * zoom;
       // the window's left edge fades over a wider strip while the camera is close, so that a node cut by it dissolves
@@ -114,14 +128,9 @@ export function createWideCamera(box, svg, base) {
       const h = bh / k;
       const x = clampTo(cx - w / 2, -SLACK * base.w, base.w * (1 + SLACK) - w);
       const y = clampTo(cy - h / 2, -SLACK * base.h, base.h * (1 + SLACK) - h);
-      svg.setAttribute("viewBox", `${x.toFixed(1)} ${y.toFixed(1)} ${w.toFixed(1)} ${h.toFixed(1)}`);
-      on = true;
+      view.set(x, y, w, h);
     },
-    off() {
-      if (on) {
-        svg.setAttribute("viewBox", home);
-        on = false;
-      }
-    },
+    /** puts the whole picture back */
+    reset: view.reset,
   };
 }
