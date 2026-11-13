@@ -2,7 +2,10 @@
 // mint appears: green means a decision a human made. One proposal is approved, then the five squares of the
 // gate fill one by one (config: first_n_reviewed = 5). Same five squares that sat empty on the gate plate in act 03.
 
-import { clamp, smooth } from "../util.js";
+import { PHONE_MAX_W, clamp, smooth } from "../util.js";
+
+const SEND_START = 0.18; // scroll progress at which the button starts sending...
+const SEND_END = 0.32; // ...and at which it has sent
 import { t as tr } from "../i18n.js";
 
 export function createApprove(root) {
@@ -18,7 +21,7 @@ export function createApprove(root) {
 
   return {
     update(p, ctx, _cur, fx) {
-      const narrow = ctx && ctx.vw < 760;
+      const narrow = ctx.vw < PHONE_MAX_W;
       const inn = fx.inn;
       const out = fx.late; // leaves as the sun comes up (act 8 starts growing it at once), not before
       const vis = inn * (1 - out);
@@ -32,9 +35,9 @@ export function createApprove(root) {
       // the button: press, send, sent
       const press = smooth(0.14, 0.17, p) * (1 - smooth(0.17, 0.2, p));
       btn.style.transform = `scale(${(1 - press * 0.035).toFixed(4)})`;
-      const sending = smooth(0.18, 0.32, p);
+      const sending = smooth(SEND_START, SEND_END, p);
       bar.style.transform = `scaleX(${sending.toFixed(3)})`;
-      const state = p < 0.18 ? "idle" : p < 0.32 ? "sending" : "sent";
+      const state = p < SEND_START ? "idle" : p < SEND_END ? "sending" : "sent";
       if (state !== lastText) {
         lastText = state;
         lab.textContent = tr("approve." + state);

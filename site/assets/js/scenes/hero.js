@@ -1,7 +1,7 @@
 // Act 01 · 18:00 · The window opens. A giant headline, the dial, and a scroll cue. The headline rises
 // letter by letter once (a ritual of opening, 30 ms per letter), then lifts away as the panel arrives.
 
-import { smooth, reducedMotion } from "../util.js";
+import { PHONE_MAX_W, smooth, reducedMotion } from "../util.js";
 
 function splitLetters(root) {
   let i = 0;
@@ -47,10 +47,11 @@ export function createHero(root) {
   return {
     update(p, ctx) {
       // phones: the plane rises under a beat that sits above it, so the beat leaves before the plane's top reaches it
-      const narrow = ctx && ctx.vw < 760;
-      const b = smooth(0.3, 0.4, p) * (1 - (narrow ? smooth(0.5, 0.57, p) : smooth(0.58, 0.7, p)));
+      const narrow = ctx.vw < PHONE_MAX_W;
+      const beatIn = smooth(0.3, 0.4, p);
+      const b = beatIn * (1 - (narrow ? smooth(0.5, 0.57, p) : smooth(0.58, 0.7, p)));
       beat.style.opacity = b.toFixed(3);
-      beat.style.transform = `translate3d(0,${((1 - smooth(0.3, 0.4, p)) * 4).toFixed(2)}vh,0)`;
+      beat.style.transform = `translate3d(0,${((1 - beatIn) * 4).toFixed(2)}vh,0)`;
       const out = smooth(0.08, 0.26, p);
       copy.style.opacity = (1 - out).toFixed(3);
       // phones: a shorter lift, so the kicker never slides up under the HUD while it fades

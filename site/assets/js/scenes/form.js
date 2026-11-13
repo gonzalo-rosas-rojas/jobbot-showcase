@@ -2,7 +2,7 @@
 // unknown one is framed and left for a person. The point of the scene is the refusal, so it ends on a stamp.
 // All names, mails and the company are fictional.
 
-import { clamp, lerp, smooth } from "../util.js";
+import { PHONE_MAX_W, clamp, lerp, smooth } from "../util.js";
 
 const T0 = 0.1; // typing starts
 const T1 = 0.6; // typing ends
@@ -32,7 +32,7 @@ export function createForm(root) {
     const key = vw + "x" + vh;
     if (key === fitKey) return;
     fitKey = key;
-    if (vw >= 760) {
+    if (vw >= PHONE_MAX_W) {
       fit = 1;
       return;
     }
@@ -50,8 +50,8 @@ export function createForm(root) {
       fitKey = "";
     },
     update(p, ctx, _cur, fx) {
-      const narrow = ctx && ctx.vw < 760;
-      measure(ctx ? ctx.vw : window.innerWidth, ctx ? ctx.vh : window.innerHeight);
+      const narrow = ctx.vw < PHONE_MAX_W;
+      measure(ctx.vw, ctx.vh);
       const inn = fx.inn;
       const out = fx.out;
       const vis = inn * (1 - out);
@@ -72,11 +72,12 @@ export function createForm(root) {
       let done = 0;
       fields.forEach((fd, i) => {
         const local = clamp(f - i);
-        const n = Math.floor(local * fd.text.length + (local > 0 && local < 1 ? 1 : 0));
-        const count = clamp(n, 0, fd.text.length);
-        if (count !== fd.n) {
-          fd.n = count;
-          fd.val.textContent = fd.text.slice(0, count);
+        // a character that is only part-typed already counts as one
+        const typedChars = Math.floor(local * fd.text.length + (local > 0 && local < 1 ? 1 : 0));
+        const visibleChars = clamp(typedChars, 0, fd.text.length);
+        if (visibleChars !== fd.n) {
+          fd.n = visibleChars;
+          fd.val.textContent = fd.text.slice(0, visibleChars);
         }
         fd.el.classList.toggle("is-typing", local > 0 && local < 1);
         if (local >= 1) done++;
@@ -99,9 +100,9 @@ export function createForm(root) {
         need.textContent = String(flagged);
       }
 
-      const s = smooth(0.76, 0.82, p) * (1 - out);
-      stamp.style.opacity = s.toFixed(3);
-      stamp.style.transform = `rotate(-8deg) scale(${lerp(1.55, 1, smooth(0.76, 0.82, p)).toFixed(3)})`;
+      const stampIn = smooth(0.76, 0.82, p);
+      stamp.style.opacity = (stampIn * (1 - out)).toFixed(3);
+      stamp.style.transform = `rotate(-8deg) scale(${lerp(1.55, 1, stampIn).toFixed(3)})`;
     },
   };
 }

@@ -3,10 +3,14 @@
 // leader lines tie to each plate; the plates themselves carry only shape and one number (the score).
 // The score counts from 0 to 92 while its plate is the active one, forwards and backwards.
 
-import { clamp, lerp, smooth } from "../util.js";
+import { PHONE_MAX_W, clamp, lerp, smooth } from "../util.js";
 
 const SW = 560; // plate size in CSS px, before the stage scales it
 const SH = 260;
+const STACK_W = 613; // the size the stack of plates occupies, in CSS px before the stage scales it...
+const STACK_H = 725; // ...so that the scale below can fit it to a share of the window
+const FIT_PHONE = { w: 0.9, h: 0.44 }; // share of the window the stack may fill
+const FIT_WIDE = { w: 0.46, h: 0.76 };
 const GAP = 150; // exploded distance between plates (translateZ)
 const N = 5;
 const A0 = 0.2; // the five captions share the scroll range A0..A1
@@ -39,7 +43,7 @@ export function createLayers(root) {
   let lastScore = -1;
 
   // step i is "on" between its two boundaries; a short smooth window at each edge
-  const on = (i, p, w = 0.016) => {
+  const on = (i, p, w) => {
     const b0 = A0 + i * SPAN;
     const b1 = b0 + SPAN;
     return smooth(b0 - w, b0 + w, p) * (1 - smooth(b1 - w, b1 + w, p));
@@ -55,7 +59,7 @@ export function createLayers(root) {
   return {
     update(p, ctx, _cur, fx) {
       const { vw, vh } = ctx;
-      const narrow = vw < 760;
+      const narrow = vw < PHONE_MAX_W;
 
       const inn = fx.inn;
       const out = fx.out;
@@ -67,7 +71,8 @@ export function createLayers(root) {
       const e = smooth(0.05, 0.28, p);
       layers.style.transform = `rotateX(${lerp(74, 62, e).toFixed(2)}deg) rotateZ(${lerp(-42, -18, e).toFixed(2)}deg)`;
 
-      const k = narrow ? Math.min((0.9 * vw) / 613, (0.44 * vh) / 725) : Math.min((0.46 * vw) / 613, (0.76 * vh) / 725);
+      const fitTo = narrow ? FIT_PHONE : FIT_WIDE;
+      const k = Math.min((fitTo.w * vw) / STACK_W, (fitTo.h * vh) / STACK_H);
       const cx = narrow ? vw * 0.5 : vw * 0.575;
       const cy = narrow ? vh * 0.33 : vh * 0.53;
       const kk = k * lerp(0.9, 1, inn);
