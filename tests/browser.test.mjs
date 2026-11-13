@@ -1,6 +1,7 @@
 // Checks that need a browser: they open the site in a headless Chrome of their own (own profile in a temporary folder,
 // no fixed port) served from a static server on a port the system picks. They are skipped, with a message, when
 // Chrome is not found; set CHROME_PATH to its location, or SHOWCASE_REQUIRE_BROWSER=1 to make a missing Chrome a failure.
+// A CHROME_PATH that points to a file that does not exist fails the file on purpose, with its own message.
 
 import assert from "node:assert/strict";
 import { after, before, describe, it } from "node:test";
