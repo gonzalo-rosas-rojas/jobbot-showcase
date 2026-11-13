@@ -3,10 +3,10 @@
 // gate fill one by one (config: first_n_reviewed = 5). Same five squares that sat empty on the gate plate in act 03.
 
 import { PHONE_MAX_W, clamp, smooth } from "../util.js";
+import { t as tr } from "../i18n.js";
 
 const SEND_START = 0.18; // scroll progress at which the button starts sending...
 const SEND_END = 0.32; // ...and at which it has sent
-import { t as tr } from "../i18n.js";
 
 export function createApprove(root) {
   const copy = root.querySelector(".a7-copy");
