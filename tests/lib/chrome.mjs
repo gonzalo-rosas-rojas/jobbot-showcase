@@ -18,11 +18,19 @@ const CANDIDATES = [
   "/usr/bin/chromium-browser",
 ];
 
-/** The Chrome to use: $CHROME_PATH if set, else the first usual install location, else null. */
+/** The Chrome to use: $CHROME_PATH if set (an error if it does not exist), else the first usual install location, else null. */
 export function findChrome() {
-  if (process.env.CHROME_PATH) return existsSync(process.env.CHROME_PATH) ? process.env.CHROME_PATH : null;
+  const chosen = process.env.CHROME_PATH;
+  if (chosen) {
+    if (!existsSync(chosen)) throw new Error(`CHROME_PATH points to a file that does not exist: ${chosen}`);
+    return chosen;
+  }
   return CANDIDATES.find((p) => existsSync(p)) ?? null;
 }
+
+// how many frames the page is given to paint: by default, and after a scroll before anything is read
+const DEFAULT_FRAMES = 2;
+const SCROLL_SETTLE_FRAMES = 3;
 
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
 
@@ -60,7 +68,8 @@ export async function launchChrome({ width = 1440, height = 900 } = {}) {
     ],
     { stdio: ["ignore", "ignore", "ignore", "pipe", "pipe"] },
   );
-  const [, , , toChrome, fromChrome] = child.stdio;
+  const toChrome = child.stdio[3]; // fd 3 of --remote-debugging-pipe: commands to Chrome
+  const fromChrome = child.stdio[4]; // fd 4: its replies and events
   const exited = new Promise((r) => child.once("exit", r));
   const killOnExit = () => child.kill();
   process.once("exit", killOnExit);
@@ -80,7 +89,9 @@ export async function launchChrome({ width = 1440, height = 900 } = {}) {
         pending.delete(message.id);
         if (message.error) call.fail(new Error(`${call.method}: ${message.error.message}`));
         else call.ok(message.result);
-      } else for (const fn of listeners) fn(message);
+      } else {
+        for (const fn of listeners) fn(message);
+      }
     }
   });
   toChrome.on("error", () => {}); // Chrome closing the pipe is not an error of the test
@@ -95,8 +106,13 @@ export async function launchChrome({ width = 1440, height = 900 } = {}) {
   async function newPage({ width: w = width, height: h = height } = {}) {
     const { targetId } = await send("Target.createTarget", { url: "about:blank" });
     const { sessionId } = await send("Target.attachToTarget", { targetId, flatten: true });
-    const page = await createPage({ send: (m, p) => send(m, p, sessionId), listen: (fn) => listeners.add((msg) => msg.sessionId === sessionId && fn(msg)), width: w, height: h });
-    page.close = () => send("Target.closeTarget", { targetId });
+    let onMessage;
+    const listen = (fn) => listeners.add((onMessage = (msg) => msg.sessionId === sessionId && fn(msg)));
+    const page = await createPage({ send: (m, p) => send(m, p, sessionId), listen, width: w, height: h });
+    page.close = () => {
+      listeners.delete(onMessage); // a closed page must not keep receiving the messages of the pages after it
+      return send("Target.closeTarget", { targetId });
+    };
     return page;
   }
 
@@ -108,20 +124,18 @@ export async function launchChrome({ width = 1440, height = 900 } = {}) {
     rmSync(profile, { recursive: true, force: true, maxRetries: 10, retryDelay: 100 });
   }
 
-  return { version: (await send("Browser.getVersion")).product, newPage, close };
+  return { newPage, close };
 }
 
 async function createPage({ send, listen, width, height }) {
   const problems = []; // console errors and warnings, exceptions, failed loads, CSP violations: { kind, text }
   const requests = []; // { url, type, at } for every request the page (and its frames) made
-  const log = []; // every console message, for the tests that look for one in particular
   const waiters = new Set();
   let loadedAt = null;
 
   listen(({ method, params }) => {
     if (method === "Runtime.consoleAPICalled") {
       const text = params.args.map((a) => a.value ?? a.description ?? "").join(" ");
-      log.push({ kind: params.type, text });
       if (["error", "warning", "assert"].includes(params.type)) problems.push({ kind: "console." + params.type, text });
     } else if (method === "Runtime.exceptionThrown") {
       const d = params.exceptionDetails;
@@ -149,13 +163,12 @@ async function createPage({ send, listen, width, height }) {
   const page = {
     problems,
     requests,
-    log,
     send,
     get loadedAt() { return loadedAt; },
 
     /** Opens the address and resolves when the page's load event has fired. Messages from earlier pages are forgotten. */
     async goto(url) {
-      problems.length = requests.length = log.length = 0;
+      problems.length = requests.length = 0;
       loadedAt = null;
       const loaded = new Promise((r) => waiters.add(r));
       await send("Page.navigate", { url });
@@ -174,19 +187,17 @@ async function createPage({ send, listen, width, height }) {
     waitFor: (expression, what, options) => until(() => page.eval(expression), what ?? expression, options),
 
     /** Resolves after the page has drawn `n` more frames. */
-    frames: (n = 2) => page.eval(`new Promise((done) => { let n = ${n}; const step = () => (--n > 0 ? requestAnimationFrame(step) : done(true)); requestAnimationFrame(step); })`),
+    frames: (n = DEFAULT_FRAMES) => page.eval(`new Promise((done) => { let n = ${n}; const step = () => (--n > 0 ? requestAnimationFrame(step) : done(true)); requestAnimationFrame(step); })`),
 
     /** Scrolls to a position and waits for the page to draw what that position shows. */
     async scrollTo(y) {
       await page.eval(`window.scrollTo(0, ${y})`);
-      await page.frames(3);
+      await page.frames(SCROLL_SETTLE_FRAMES);
     },
 
     scripting: (enabled) => send("Emulation.setScriptExecutionDisabled", { value: !enabled }),
 
     reducedMotion: (on) => send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-motion", value: on ? "reduce" : "no-preference" }] }),
-
-    resize: (w, h) => send("Emulation.setDeviceMetricsOverride", { width: w, height: h, deviceScaleFactor: 1, mobile: false }),
 
     /** Messages of the kinds that mean something is wrong, as readable lines. */
     problemLines: () => problems.map((p) => `${p.kind}: ${p.text}`),
