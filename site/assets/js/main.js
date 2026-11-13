@@ -30,10 +30,12 @@ const PANEL_DEADLINE_MS = 4000;
 const IDLE_TIMEOUT_MS = 1000; // the browser may wait this long for an idle moment before it runs the start anyway
 const IDLE_FALLBACK_MS = 300; // without requestIdleCallback: a short wait instead
 
-/** Writes `value` into `el` only when it is not the one written last time; returns what is written now. */
-function writeIfChanged(el, value, last) {
-  if (value !== last) el.textContent = value;
-  return value;
+/** A function that writes text into `el`, touching the DOM only when the text is not the one it wrote last. */
+function textWriter(el) {
+  let last = "";
+  return (text) => {
+    if (text !== last) el.textContent = last = text;
+  };
 }
 
 /**
@@ -43,7 +45,7 @@ function writeIfChanged(el, value, last) {
  * once the page has loaded and painted and the browser is idle, or sooner if the visitor scrolls toward it. The address
  * is set here, not in the HTML, so that ?lang= of this address reaches the panel in its one request.
  */
-function schedulePanelLoad(iframe) {
+function armPanelLoad(iframe) {
   let panelStarted = false;
   function startPanel() {
     if (panelStarted) return;
@@ -80,20 +82,18 @@ function startStory() {
   const dialHost = document.getElementById("dial");
   const plane = document.getElementById("plane");
   const iframe = plane.querySelector("iframe");
-  const startPanel = schedulePanelLoad(iframe);
+  const startPanel = armPanelLoad(iframe);
 
   const dial = createDial(dialHost);
   const sky = createSky(document.getElementById("sky"));
   const rig = createRig({ dialHost, dial, plane, iframe, heroCopy: document.querySelector(".a1-copy"), readCopy: document.querySelector(".a2-copy") });
-  const clockEl = document.getElementById("clock");
-  const labelEl = document.getElementById("act-label");
+  const setClock = textWriter(document.getElementById("clock"));
+  const setLabel = textWriter(document.getElementById("act-label"));
   const progEl = document.getElementById("progress");
 
   const acts = buildActs();
 
   const tryPanel = createTry();
-  let lastLabel = "";
-  let lastClock = "";
   let panelSeen = false;
   const engine = createEngine({
     acts,
@@ -101,8 +101,8 @@ function startStory() {
       if (ctx.u > PANEL_NEAR) startPanel();
       sky.update(ctx.nightT, ctx.sy);
       rig.update(ctx);
-      lastClock = writeIfChanged(clockEl, clockText(ctx.nightT), lastClock);
-      lastLabel = writeIfChanged(labelEl, acts[ctx.idx] ? acts[ctx.idx].label : "", lastLabel);
+      setClock(clockText(ctx.nightT));
+      setLabel(acts[ctx.idx] ? acts[ctx.idx].label : "");
       // the panel is on screen from act 2 on, so that is when "Use the panel" shows up in the HUD
       const seen = ctx.idx >= 1;
       if (seen !== panelSeen) {
