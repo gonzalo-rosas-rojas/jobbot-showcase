@@ -3,9 +3,13 @@
 // (sky, dial, panel plane). Scrolling stays native: nothing is hijacked, we only smooth what we read.
 // The loop sleeps as soon as the page stops moving.
 
-import { clamp, lerp, reducedMotion } from "./util.js";
+import { clamp, lerp, reducedMotion, smooth } from "./util.js";
 
-const smoothPx = (a, b, x) => { const t = clamp((x - a) / (b - a)); return t * t * (3 - 2 * t); };
+const SNAP_SLACK_PX = 1; // an act counts as reached this many px before its top, so sub-pixel layout never skips it
+const NEAR_AHEAD = 1.2; // an act is updated from this many viewport heights before it reaches the screen...
+const NEAR_BEHIND = 0.2; // ...until this many viewport heights after it has left
+const SMOOTHING_RATE = 9; // 1 / s: how fast the read position catches up with the scroll position
+const SETTLE_PX = 0.2; // closer than this to the scroll position, the read position lands on it and the loop sleeps
 
 export function createEngine({ acts, onFrame }) {
   const RM = reducedMotion();
@@ -34,7 +38,7 @@ export function createEngine({ acts, onFrame }) {
   function render() {
     // find the act whose pinned range contains the (smoothed) scroll position
     let idx = 0;
-    for (let i = 0; i < items.length; i++) if (sy >= items[i].top - 1) idx = i;
+    for (let i = 0; i < items.length; i++) if (sy >= items[i].top - SNAP_SLACK_PX) idx = i;
     const cur = items[idx];
     const p = clamp((sy - cur.top) / cur.range);
     let nightT = lerp(cur.nightFrom, cur.nightTo, p);
@@ -45,13 +49,13 @@ export function createEngine({ acts, onFrame }) {
       if (ovl > 1 && sy < cur.top + ovl) {
         const pt = lerp(pv.nightFrom, pv.nightTo, clamp((sy - pv.top) / pv.range));
         const t = clamp((sy - cur.top) / ovl);
-        nightT = lerp(pt, nightT, t * t * (3 - 2 * t));
+        nightT = lerp(pt, nightT, smooth(0, 1, t));
       }
     }
     const ctx = { vw, vh, sy, idx, p, u: idx + p, nightT, total: clamp(sy / docH), items };
     for (let i = 0; i < items.length; i++) {
       const it = items[i];
-      const near = sy + vh * 1.2 > it.top && sy < it.top + it.height + vh * 0.2;
+      const near = sy + vh * NEAR_AHEAD > it.top && sy < it.top + it.height + vh * NEAR_BEHIND;
       it.p = clamp((sy - it.top) / it.range);
       if (near) {
         it.el.style.setProperty("--p", it.p.toFixed(4));
@@ -60,11 +64,11 @@ export function createEngine({ acts, onFrame }) {
         const F = 0.3 * vh;
         const local = sy - it.top;
         const fx = {
-          inn: i === 0 ? 1 : smoothPx(F * 0.5, F, local),
-          out: i === items.length - 1 ? 0 : smoothPx(it.range - F, it.range - F * 0.5, local),
+          inn: i === 0 ? 1 : smooth(F * 0.5, F, local),
+          out: i === items.length - 1 ? 0 : smooth(it.range - F, it.range - F * 0.5, local),
           // the same exit, half a hand-over later: it ends exactly when the pinned stage is released. Only act 7
           // uses it, so that the sun of act 8 (which grows from the first pixel) takes over without an empty beat.
-          late: i === items.length - 1 ? 0 : smoothPx(it.range - F * 0.5, it.range, local),
+          late: i === items.length - 1 ? 0 : smooth(it.range - F * 0.5, it.range, local),
         };
         if (it.scene && it.scene.update) it.scene.update(it.p, ctx, i === idx, fx);
       }
@@ -77,9 +81,9 @@ export function createEngine({ acts, onFrame }) {
     const dt = Math.min(64, now - last) / 1000;
     last = now;
     target = window.scrollY;
-    const k = RM ? 1 : 1 - Math.exp(-dt * 9);
+    const k = RM ? 1 : 1 - Math.exp(-dt * SMOOTHING_RATE);
     sy += (target - sy) * k;
-    if (Math.abs(target - sy) < 0.2) sy = target;
+    if (Math.abs(target - sy) < SETTLE_PX) sy = target;
     render();
     if (sy !== target) raf = requestAnimationFrame(tick);
   }

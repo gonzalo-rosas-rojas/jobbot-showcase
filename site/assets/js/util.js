@@ -1,9 +1,10 @@
 // Small math helpers shared by every scene. No dependencies.
 
 export const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+/** `v` kept inside [lo, hi]; when the range is empty (lo > hi) the middle of the two. */
+export const clampTo = (v, lo, hi) => (lo > hi ? (lo + hi) / 2 : Math.min(hi, Math.max(lo, v)));
 export const lerp = (a, b, t) => a + (b - a) * t;
 export const smooth = (a, b, x) => { const t = clamp((x - a) / (b - a)); return t * t * (3 - 2 * t); };
-export const smoother = (a, b, x) => { const t = clamp((x - a) / (b - a)); return t * t * t * (t * (t * 6 - 15) + 10); };
 export const easeOutExpo = (t) => (t >= 1 ? 1 : 1 - Math.pow(2, -10 * t));
 export const easeInOut = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 
@@ -16,9 +17,7 @@ export function track(keys, x) {
     const [x0, v0] = keys[i];
     const [x1, v1] = keys[i + 1];
     if (x >= x0 && x <= x1) {
-      const t = (x - x0) / (x1 - x0);
-      const e = t * t * (3 - 2 * t);
-      return v0 + (v1 - v0) * e;
+      return v0 + (v1 - v0) * smooth(x0, x1, x);
     }
   }
   return last[1];
@@ -48,13 +47,22 @@ export function mulberry32(seed) {
 
 export const pad2 = (n) => String(n).padStart(2, "0");
 
-/** Night time in hours since 18:00 (0..15) -> "HH:MM". */
+/** The hour of day (0..23) at which the night shift starts: the dial and the clock both count from it. */
+export const WINDOW_START = 18;
+
+/** Night time in hours since WINDOW_START (0..15) -> "HH:MM". */
 export function clockText(nightT) {
-  const total = Math.round(((18 + nightT) % 24) * 60);
+  const total = Math.round(((WINDOW_START + nightT) % 24) * 60);
   const h = Math.floor(total / 60) % 24;
   const m = total % 60;
   return pad2(h) + ":" + pad2(m);
 }
+
+/** Widest viewport (px) that gets the phone composition; the stylesheet's `max-width: 760px` is the same line. */
+export const PHONE_MAX_W = 760;
+
+/** A count as the page writes it: rounded to a whole number, English thousands separators. */
+export const fmtCount = (n) => Math.round(n).toLocaleString("en-US");
 
 export const reducedMotion = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
