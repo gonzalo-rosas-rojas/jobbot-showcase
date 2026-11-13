@@ -11,20 +11,24 @@ REPO = sys.argv[1]
 
 def rust_files(sub):
     root = os.path.join(REPO, sub)
-    for d, _, files in os.walk(root):
-        for f in files:
-            if f.endswith(".rs"):
-                yield os.path.join(d, f)
+    for dirpath, _, names in os.walk(root):
+        for name in names:
+            if name.endswith(".rs"):
+                yield os.path.join(dirpath, name)
 
 
-lines = tests = ignored = files = 0
-for sub in ("src", "tests", "crates"):
-    for p in rust_files(sub):
-        files += 1
-        text = open(p, encoding="utf-8", errors="replace").read()
-        lines += text.count("\n") + (0 if text.endswith("\n") else 1)
-        tests += len(re.findall(r"#\[(?:tokio::)?test\b", text))
-        ignored += len(re.findall(r"#\[ignore\b", text))
+def count_rust():
+    """Counts the Rust files under src/, tests/ and crates/: returns (files, lines, tests, ignored)."""
+    files = lines = tests = ignored = 0
+    for sub in ("src", "tests", "crates"):
+        for p in rust_files(sub):
+            files += 1
+            text = open(p, encoding="utf-8", errors="replace").read()
+            lines += text.count("\n") + (0 if text.endswith("\n") else 1)
+            tests += len(re.findall(r"#\[(?:tokio::)?test\b", text))
+            ignored += len(re.findall(r"#\[ignore\b", text))
+    return files, lines, tests, ignored
+
 
 def manifests():
     yield os.path.join(REPO, "Cargo.toml")
@@ -35,18 +39,30 @@ def manifests():
             yield path
 
 
+def is_external_dependency(section, stripped):
+    """True for a line of [dependencies] that names a third-party crate. The workspace's own crates (`path = ...`) are not."""
+    return (
+        section == "[dependencies]"
+        and stripped
+        and not stripped.startswith("#")
+        and "=" in stripped
+        and not re.search(r"\bpath\s*=", stripped)
+    )
+
+
+files, lines, tests, ignored = count_rust()
+
 # One program in several crates: a crate two of them use counts once.
 deps = set()
 for manifest in manifests():
     section = ""
     for line in open(manifest, encoding="utf-8"):
-        s = line.strip()
-        if s.startswith("["):
-            section = s
+        stripped = line.strip()
+        if stripped.startswith("["):
+            section = stripped
             continue
-        # The workspace's own crates (`path = ...`) are not dependencies.
-        if section == "[dependencies]" and s and not s.startswith("#") and "=" in s and not re.search(r"\bpath\s*=", s):
-            deps.add(re.split(r"[\s.=]", s, maxsplit=1)[0])
+        if is_external_dependency(section, stripped):
+            deps.add(re.split(r"[\s.=]", stripped, maxsplit=1)[0])
 
 out = {"rust_lines": lines, "rust_files": files, "test_functions": tests,
        "offline_tests": tests - ignored, "ignored_tests": ignored, "dependencies": len(deps),
