@@ -4,7 +4,7 @@
 // data/receipts.json, which scripts/receipts.py writes. Nothing here is a claim the repo can't back.
 
 import { PHONE_MAX_W, clamp, fmtCount, lerp, qaWarn, smooth, easeOutExpo, track } from "../util.js";
-import { WIDE_CLOSE, createCamera, createRoomFit, createWideCamera } from "../camera.js";
+import { WIDE_CLOSE, createCamera, isWide, createRoomFit, createWideCamera } from "../camera.js";
 import { t as tr } from "../i18n.js";
 
 // when each node appears (scroll progress inside the act); order matches the SVG
@@ -119,7 +119,7 @@ export function createMachine(root) {
       const wide = smooth(0.7, 0.86, p);
       const cx = lerp(lerp(tx, 440, down), 440, wide);
       const { vw, vh } = ctx;
-      if (vw > PHONE_MAX_W && vh >= 600) {
+      if (isWide(vw, vh)) {
         camera.reset();
         // how close the camera wants to be, in window px per SVG unit: biggest on the first node, whole picture at the end
         const want = WIDE_CLOSE * (vh / 1080) * track([[0, 1.25], [0.1, 1.25], [0.3, 1], [0.5, 0.82], [0.62, 0.63], [0.7, 0.63], [0.86, 0], [1, 0]], p);

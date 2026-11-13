@@ -4,7 +4,7 @@
 // ghosted is not terminal, a late answer can move it again.
 
 import { PHONE_MAX_W, lerp, smooth, track } from "../util.js";
-import { WIDE_CLOSE, createCamera, createRoomFit, createWideCamera } from "../camera.js";
+import { WIDE_CLOSE, createCamera, isWide, createRoomFit, createWideCamera } from "../camera.js";
 
 const XS = [50, 250, 450, 650, 850];
 const Y = 170;
@@ -65,7 +65,7 @@ export function createFollow(root) {
       for (const a of AT) lag += smooth(a + 0.03, a + STEP + 0.03, p);
       const branch = smooth(0.56, 0.72, p);
       const { vw, vh } = ctx;
-      if (vw > PHONE_MAX_W && vh >= 600) {
+      if (isWide(vw, vh)) {
         // wide screens: the same camera in a window right of the copy, close on the token first, whole picture at the end
         camera.reset();
         const want = WIDE_CLOSE * (vh / 1080) * track([[0, 1.25], [0.1, 1.25], [0.3, 1], [0.52, 0.8], [0.62, 0.6], [0.76, 0], [1, 0]], p);
