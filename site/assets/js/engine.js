@@ -35,12 +35,9 @@ export function createEngine({ acts, onFrame }) {
     docH = Math.max(1, document.documentElement.scrollHeight - vh);
   }
 
-  function render() {
-    // find the act whose pinned range contains the (smoothed) scroll position
-    let idx = 0;
-    for (let i = 0; i < items.length; i++) if (sy >= items[i].top - SNAP_SLACK_PX) idx = i;
+  /** the hour of the night at the read position, `p` being the progress of act `idx` */
+  function nightAt(idx, p) {
     const cur = items[idx];
-    const p = clamp((sy - cur.top) / cur.range);
     let nightT = lerp(cur.nightFrom, cur.nightTo, p);
     // where two acts overlap, the hour glides from the old act's value to the new one's instead of jumping
     if (idx > 0) {
@@ -52,6 +49,31 @@ export function createEngine({ acts, onFrame }) {
         nightT = lerp(pt, nightT, smooth(0, 1, t));
       }
     }
+    return nightT;
+  }
+
+  /** how far act `i` has faded in and out (see `handOver` below) */
+  function handOverFx(i, it) {
+    // hand-over between overlapping acts: the old one fades out in the first half of the overlap and the
+    // new one fades in during the second half, so two headlines are never on screen together
+    const handOver = 0.3 * vh;
+    const local = sy - it.top;
+    return {
+      inn: i === 0 ? 1 : smooth(handOver * 0.5, handOver, local),
+      out: i === items.length - 1 ? 0 : smooth(it.range - handOver, it.range - handOver * 0.5, local),
+      // the same exit, half a hand-over later: it ends exactly when the pinned stage is released. Only act 7
+      // uses it, so that the sun of act 8 (which grows from the first pixel) takes over without an empty beat.
+      late: i === items.length - 1 ? 0 : smooth(it.range - handOver * 0.5, it.range, local),
+    };
+  }
+
+  function render() {
+    // find the act whose pinned range contains the (smoothed) scroll position
+    let idx = 0;
+    for (let i = 0; i < items.length; i++) if (sy >= items[i].top - SNAP_SLACK_PX) idx = i;
+    const cur = items[idx];
+    const p = clamp((sy - cur.top) / cur.range);
+    const nightT = nightAt(idx, p);
     const ctx = { vw, vh, sy, idx, p, u: idx + p, nightT, total: clamp(sy / docH), items };
     for (let i = 0; i < items.length; i++) {
       const it = items[i];
@@ -59,18 +81,7 @@ export function createEngine({ acts, onFrame }) {
       it.p = clamp((sy - it.top) / it.range);
       if (near) {
         it.el.style.setProperty("--p", it.p.toFixed(4));
-        // hand-over between overlapping acts: the old one fades out in the first half of the overlap and the
-        // new one fades in during the second half, so two headlines are never on screen together
-        const F = 0.3 * vh;
-        const local = sy - it.top;
-        const fx = {
-          inn: i === 0 ? 1 : smooth(F * 0.5, F, local),
-          out: i === items.length - 1 ? 0 : smooth(it.range - F, it.range - F * 0.5, local),
-          // the same exit, half a hand-over later: it ends exactly when the pinned stage is released. Only act 7
-          // uses it, so that the sun of act 8 (which grows from the first pixel) takes over without an empty beat.
-          late: i === items.length - 1 ? 0 : smooth(it.range - F * 0.5, it.range, local),
-        };
-        if (it.scene && it.scene.update) it.scene.update(it.p, ctx, i === idx, fx);
+        if (it.scene && it.scene.update) it.scene.update(it.p, ctx, i === idx, handOverFx(i, it));
       }
     }
     onFrame(ctx);
