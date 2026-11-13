@@ -14,6 +14,10 @@ const skip = !required && !findChrome() ? "Chrome was not found: set CHROME_PATH
 const DESKTOP = { width: 1440, height: 900 };
 const PHONE = { width: 390, height: 844 };
 const PANEL_WAIT_MS = 10000; // how long a test waits for the panel to be requested after a load event that never comes
+const BAR_AND_MARGINS_PX = 400; // what the page may be taller than its acts: the bar at the top and the margins between them
+const PAST_IDLE_START_MS = 1500; // longer than the animated page waits for an idle moment (1000 ms, main.js) before it asks for its panel
+// what Chrome says to a question asked of a document that is being replaced by a navigation
+const NAVIGATING = /Execution context was destroyed|Cannot find context|Inspected target navigated or closed/;
 const MAX_BLANK_PX = 200; // most an act may leave empty after its last line
 const MAX_ACT_HEIGHT_PX = 3000; // tallest an act may be when it is laid out as a document
 
@@ -162,6 +166,7 @@ describe("loading the panel", { skip }, () => {
   it("does not ask for the panel until the page has loaded", async () => {
     const page = await open("");
     await until(() => demoRequests(page).length > 0, "the panel to be requested");
+    assert.notEqual(page.loadedAt, null, "the page never fired its load event");
     assert.ok(demoRequests(page)[0].at > page.loadedAt, "the panel was requested before the page's load event");
     await page.close();
   });
@@ -277,7 +282,7 @@ describe("with the preference for reduced motion", { skip }, () => {
           assert.ok(height < MAX_ACT_HEIGHT_PX, `${id} is ${height} px tall`);
         }
         // nothing is pinned or laid over the text: the page is as tall as the acts and the bar at the top
-        assert.ok((await page.eval(`document.documentElement.scrollHeight`)) < acts.reduce((sum, a) => sum + a.height, 0) + 400);
+        assert.ok((await page.eval(`document.documentElement.scrollHeight`)) < acts.reduce((sum, a) => sum + a.height, 0) + BAR_AND_MARGINS_PX);
         await page.close();
       });
 
@@ -310,9 +315,21 @@ describe("with the preference for reduced motion", { skip }, () => {
         ]);
         assert.equal(await page.eval(`document.documentElement.lang`), lang);
         await page.eval(`document.querySelector('#lang-switch a[data-lang="${other}"]').click()`);
-        await until(async () => {
-          try { return (await page.eval(`document.documentElement.lang`)) === other && (await page.eval(`document.readyState`)) === "complete"; } catch { return false; } // the old document goes away mid-question
-        }, "the other language to load");
+        let lastNavigationError = null;
+        try {
+          await until(async () => {
+            try {
+              return (await page.eval(`document.documentElement.lang`)) === other && (await page.eval(`document.readyState`)) === "complete";
+            } catch (err) {
+              if (!NAVIGATING.test(err.message)) throw err; // only "the old document went away mid-question" is expected
+              lastNavigationError = err;
+              return false;
+            }
+          }, "the other language to load");
+        } catch (err) {
+          if (lastNavigationError) err.message += ` (the last answer from the page was: ${lastNavigationError.message})`;
+          throw err;
+        }
         assert.match(await page.eval(`document.getElementById("h1").textContent`), other === "es" ? /El bot trabaja/ : /The bot works/);
         await page.close();
       });
@@ -335,8 +352,8 @@ describe("with the preference for reduced motion", { skip }, () => {
 
       it("does not ask for the panel until \"Use the panel\" is pressed, and then opens it", async () => {
         const page = await open(search, { reducedMotion: true });
-        // longer than the idle moment after which the animated page would have started it
-        await new Promise((r) => setTimeout(r, 1500));
+        // nothing observable says "the animated page would have asked by now": wait longer than it ever does
+        await new Promise((r) => setTimeout(r, PAST_IDLE_START_MS));
         await page.eval(`document.querySelector(".hud-try").dispatchEvent(new PointerEvent("pointerenter"))`);
         await page.frames(5);
         assert.deepEqual(demoRequests(page), [], "the panel was requested with nothing pressed");
