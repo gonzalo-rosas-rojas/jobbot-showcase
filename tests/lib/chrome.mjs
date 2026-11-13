@@ -107,7 +107,10 @@ export async function launchChrome({ width = 1440, height = 900 } = {}) {
     const { targetId } = await send("Target.createTarget", { url: "about:blank" });
     const { sessionId } = await send("Target.attachToTarget", { targetId, flatten: true });
     let onMessage;
-    const listen = (fn) => listeners.add((onMessage = (msg) => msg.sessionId === sessionId && fn(msg)));
+    const listen = (fn) => {
+      onMessage = (msg) => msg.sessionId === sessionId && fn(msg);
+      listeners.add(onMessage);
+    };
     const page = await createPage({ send: (m, p) => send(m, p, sessionId), listen, width: w, height: h });
     page.close = () => {
       listeners.delete(onMessage); // a closed page must not keep receiving the messages of the pages after it
