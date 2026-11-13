@@ -135,7 +135,7 @@ p { margin: 0; }
 /* who it is by: the same quiet mono label as the HUD, the name in the text colour, the link underlined like the links on the paper */
 .byline { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; margin-bottom: 2.4vh; color: var(--text-dim); }
 .byline b { color: var(--text); font-weight: 400; }
-.byline a { color: var(--text); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; transition: color 0.2s; }
+.byline a { color: var(--text); }
 .byline a:hover { color: var(--gold); }
 .kicker { color: var(--text-dim); max-width: 60ch; line-height: 1.6; margin-bottom: 3.2vh; font-size: clamp(14px, 1.05vw, 17px); }
 .mega {
@@ -390,7 +390,8 @@ html[lang="es"] .honest { --fit: 0.94; }
 .next-lead { flex: 1 1 100%; }
 .foot { margin-top: 0; max-width: 100ch; color: var(--paper-dim); font-size: 10.5px; line-height: 1.6; letter-spacing: 0.12em; }
 /* links on the paper (each rule's file, the source): the ink of their text, told apart by the underline */
-.paper a { color: inherit; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; transition: color 0.2s; }
+.paper a, .byline a { text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; transition: color 0.2s; }
+.paper a { color: inherit; }
 .paper a:hover { color: var(--paper-ink); }
 .paper a:focus-visible { outline-color: var(--paper-ink); }
 .cta { flex: none; display: inline-flex; align-items: center; gap: 14px; padding: 15px 22px 15px 20px; border: 0; border-radius: 2px; background: var(--paper-ink); color: var(--paper); font: 600 17px/1 var(--body); letter-spacing: 0.01em; cursor: pointer; transition: transform 0.35s var(--ease), background 0.2s; }

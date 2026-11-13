@@ -14,7 +14,7 @@ import { ROOT, SITE, fromFile, importSpecifiers, moduleGraph, read, readSite, si
 // weighed when the budget was set, plus 5 %. When a change goes over it, either the change is too heavy or this number
 // is a decision to take on purpose, in the same commit.
 // Raised from 218962 when the byline and the closing next step came in: about 2 KB of markup, style and Spanish text.
-const FIRST_LOAD_BUDGET_BYTES = 229923; // 218974 bytes measured, plus 5 %
+const FIRST_LOAD_BUDGET_BYTES = 229643; // 218707 bytes measured, plus 5 %
 
 const html = readSite("index.html");
 const css = readSite("assets/css/main.css");
@@ -221,7 +221,7 @@ describe("the code the story cites", () => {
   });
 
   it("shows, for each of the five rules, the path its link opens", () => {
-    const rules = [...html.matchAll(/<li><p>[^<]+<\/p><code><a href="([^"]+)"(?: rel="noopener")?>([^<]+)<\/a><\/code><\/li>/g)];
+    const rules = [...html.matchAll(/<li><p>[^<]+<\/p><code><a href="([^"]+)">([^<]+)<\/a><\/code><\/li>/g)];
     assert.equal(rules.length, 5);
     for (const [, href, shown] of rules) assert.ok(href.endsWith(`/${shown}`), `${shown} is shown, ${href} is opened`);
   });
@@ -234,38 +234,36 @@ describe("who the page is by, and where a reader goes next", () => {
   const JOBBOT = "https://github.com/gonzalo-rosas-rojas/jobbot";
   const i18n = readSite("assets/js/i18n.js");
 
-  /** The markup between a start marker and the next end marker, and the <a> elements in it as { href, rel, text }. */
+  /** The markup between a start marker and the next end marker. */
   const slice = (from, to) => {
     const start = html.indexOf(from);
     assert.ok(start >= 0, `${from} is not in index.html`);
-    return html.slice(start, html.indexOf(to, start));
+    const end = html.indexOf(to, start);
+    assert.ok(end > start, `${to} does not come after ${from}`);
+    return html.slice(start, end);
   };
-  const links = (markup) =>
-    [...markup.matchAll(/<a\b([^>]*)>([^<]*)<\/a>/g)].map(([, attrs, text]) => ({
-      href: attrs.match(/href="([^"]*)"/)?.[1],
-      rel: attrs.match(/rel="([^"]*)"/)?.[1],
-      text,
-    }));
+  /** The address of every <a> of a piece of markup, in order. It fails on an <a> it cannot read instead of skipping it. */
+  const hrefs = (markup) => {
+    const found = [...markup.matchAll(/<a\b[^>]*\bhref="([^"]*)"[^>]*>/g)].map((m) => m[1]);
+    assert.equal(found.length, (markup.match(/<a\b/g) ?? []).length, "an <a> has no href this check can read");
+    return found;
+  };
+  const firstScreen = () => slice('<div class="a1-copy">', '<div class="beat">');
+  const nextStep = () => slice('<p class="next">', "</p>");
 
-  it("puts the author's name and a LinkedIn link in the first screen's copy, with rel=noopener", () => {
-    const first = slice('<div class="a1-copy">', '<div class="beat">');
-    assert.ok(first.includes(NAME), "the first screen does not say whose it is");
-    const linkedin = links(first).filter((a) => a.href === LINKEDIN);
-    assert.equal(linkedin.length, 1, "the first screen needs exactly one link to LinkedIn");
-    assert.match(linkedin[0].rel, /\bnoopener\b/);
+  it("puts the author's name and a LinkedIn link in the first screen's copy", () => {
+    assert.ok(firstScreen().includes(NAME), "the first screen does not say whose it is");
+    assert.equal(hrefs(firstScreen()).filter((h) => h === LINKEDIN).length, 1, "the first screen needs exactly one link to LinkedIn");
   });
 
   it("keeps the name and the link in the Spanish first screen: no Spanish text replaces the byline's name or link", () => {
-    // the Spanish story rewrites elements by selector; none of them may be the byline as a whole
-    assert.doesNotMatch(i18n, /\["\.byline",/, "a rule rewrites the whole byline, name and link included");
+    // the Spanish story rewrites elements by selector; the only rule that may reach into the byline is the one for its "By"
+    assert.doesNotMatch(i18n, /\["\.byline(?! \.by")/, "a rule rewrites the byline's name or link, or the whole of it");
     assert.match(i18n, /\["\.byline \.by",\s*"Por"\]/, "the byline's 'By' has no Spanish text");
   });
 
-  it("closes the story with a next step: the LinkedIn, GitHub and jobbot links at their exact addresses, each with rel=noopener", () => {
-    const next = slice('<p class="next">', "</p>");
-    const found = links(next);
-    assert.deepEqual(found.map((a) => a.href), [LINKEDIN, GITHUB, JOBBOT]);
-    for (const a of found) assert.match(a.rel, /\bnoopener\b/, `${a.href} has no rel=noopener`);
+  it("closes the story with a next step: the LinkedIn, GitHub and jobbot links at their exact addresses", () => {
+    assert.deepEqual(hrefs(nextStep()), [LINKEDIN, GITHUB, JOBBOT]);
     assert.ok(html.indexOf('<p class="next">') > html.indexOf('id="a8"'), "the next step is not in the last act");
   });
 
@@ -281,14 +279,11 @@ describe("who the page is by, and where a reader goes next", () => {
     for (const file of jsFiles()) assert.doesNotMatch(readSite(file), /mailto:/i, `${file} holds a mailto: address`);
   });
 
-  it("does not link LinkedIn or the author's GitHub anywhere but where this block says", () => {
-    const all = links(html).map((a) => a.href);
-    assert.equal(all.filter((h) => h === LINKEDIN).length, 2, "LinkedIn is linked in the first screen and in the closing, no more");
-    assert.equal(all.filter((h) => h === GITHUB).length, 1);
-  });
-
-  it("gives every external link of the page rel=noopener", () => {
-    for (const a of links(html)) if (/^https?:\/\//.test(a.href ?? "")) assert.match(a.rel ?? "", /\bnoopener\b/, `${a.href} has no rel=noopener`);
+  it("links LinkedIn and the author's GitHub profile nowhere else in the page", () => {
+    // the two tests above place one LinkedIn link in the first screen and one in the closing; the totals leave no room for a third
+    const all = hrefs(html);
+    assert.equal(all.filter((h) => h === LINKEDIN).length, 2, "LinkedIn is linked somewhere besides the first screen and the closing");
+    assert.equal(all.filter((h) => h === GITHUB).length, 1, "the GitHub profile is linked somewhere besides the closing");
   });
 });
 

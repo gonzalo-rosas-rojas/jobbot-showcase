@@ -136,7 +136,7 @@ const ES_DOM = [
     "Donde un bot sería detectado, llena el formulario y yo lo envío.",
     "Se queda en silencio en mis horas ocupadas.",
   ]],
-  [".paper-end .foot", 'Hecho con ayuda de IA. Todos los datos de esta página son ficticios; las cifras salen del código real (scripts/receipts.py). El código está en <a href="https://github.com/gonzalo-rosas-rojas/jobbot" rel="noopener">GitHub</a>.'],
+  [".paper-end .foot", 'Hecho con ayuda de IA. Todos los datos de esta página son ficticios; las cifras salen del código real (scripts/receipts.py). El código está en <a href="https://github.com/gonzalo-rosas-rojas/jobbot">GitHub</a>.'],
   [".next .next-lead", "¿Quieres conversar sobre este trabajo? Encuéntrame aquí."],
   [".next a", ["LinkedIn", "Perfil de GitHub", "Repositorio de jobbot"]],
 
