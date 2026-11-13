@@ -2,14 +2,21 @@
 // (18:00 -> 09:00) sweeps over the top and the hours Gonza is busy (09:00 -> 18:00) are hatched at the bottom.
 // Everything is generated here so the HTML stays small and the geometry has a single source of truth.
 
-import { clockText } from "./util.js";
+import { WINDOW_START, clockText } from "./util.js";
 import { t as tr } from "./i18n.js";
 
 const NS = "http://www.w3.org/2000/svg";
 const C = 300; // centre of the 600 x 600 drawing
 const R_RING = 262;
-const WINDOW_START = 18; // hour of day
+const R_RUN = R_RING - 22; // the hourly run dots, and the arc the "OCCUPIED" caption runs along
+const R_BUSY = R_RING - 52; // inner edge of the hatched busy hours
+const R_SWEEP_OUT = R_RING - 54; // outer edge of the sweep behind the hand
+const R_SWEEP_IN = 30;
+const SWEEP_SPAN_DEG = 70; // how far behind the hand the sweep trails
+const FACE_TINT = "#9db4ff"; // the cool surface of the dial face
 const WINDOW_END = 9;
+const WINDOW_HOURS = 15; // 18:00 -> 09:00
+const DEG_PER_HOUR = 360 / 24;
 
 const angleOf = (hour) => ((hour % 24) / 24) * 360; // clockwise from the top
 const polar = (r, deg) => {
@@ -51,9 +58,9 @@ export function createDial(host) {
   const hatch = el("pattern", { id: "hatch", width: 7, height: 7, patternUnits: "userSpaceOnUse", patternTransform: "rotate(45)" }, defs);
   el("line", { x1: 0, y1: 0, x2: 0, y2: 7, class: "hatch-line" }, hatch);
   const grad = el("radialGradient", { id: "dial-face", cx: "50%", cy: "42%", r: "62%" }, defs);
-  el("stop", { offset: "0%", "stop-color": "#9db4ff", "stop-opacity": ".085" }, grad);
-  el("stop", { offset: "70%", "stop-color": "#9db4ff", "stop-opacity": ".025" }, grad);
-  el("stop", { offset: "100%", "stop-color": "#9db4ff", "stop-opacity": ".0" }, grad);
+  el("stop", { offset: "0%", "stop-color": FACE_TINT, "stop-opacity": ".085" }, grad);
+  el("stop", { offset: "70%", "stop-color": FACE_TINT, "stop-opacity": ".025" }, grad);
+  el("stop", { offset: "100%", "stop-color": FACE_TINT, "stop-opacity": ".0" }, grad);
 
   // the dial face: a faint cool surface, instrument rings and a crosshair
   el("circle", { cx: C, cy: C, r: R_RING, fill: "url(#dial-face)" }, svg);
@@ -64,16 +71,18 @@ export function createDial(host) {
   // busy hours 09:00 -> 18:00, hatched
   const busy0 = angleOf(WINDOW_END);
   const busy1 = angleOf(WINDOW_START);
-  el("path", { d: sector(R_RING - 52, R_RING, busy0, busy1), fill: "url(#hatch)", class: "busy" }, svg);
-  el("path", { d: arcPath(R_RING - 52, busy0, busy1), class: "hair" }, svg);
+  el("path", { d: sector(R_BUSY, R_RING, busy0, busy1), fill: "url(#hatch)", class: "busy" }, svg);
+  el("path", { d: arcPath(R_BUSY, busy0, busy1), class: "hair" }, svg);
   // the arc the "OCCUPIED" caption runs along (the textPath below points at it by id)
-  el("path", { id: "busy-label-path", d: `M${f(polar(R_RING - 22, busy1)[0])} ${f(polar(R_RING - 22, busy1)[1])} A${R_RING - 22} ${R_RING - 22} 0 0 0 ${f(polar(R_RING - 22, busy0)[0])} ${f(polar(R_RING - 22, busy0)[1])}`, fill: "none" }, defs);
+  const [labelX0, labelY0] = polar(R_RUN, busy1);
+  const [labelX1, labelY1] = polar(R_RUN, busy0);
+  el("path", { id: "busy-label-path", d: `M${f(labelX0)} ${f(labelY0)} A${R_RUN} ${R_RUN} 0 0 0 ${f(labelX1)} ${f(labelY1)}`, fill: "none" }, defs);
   const t = el("text", { class: "dial-micro busy-label", "text-anchor": "middle" }, svg);
   const tp = el("textPath", { href: "#busy-label-path", startOffset: "50%" }, t);
   tp.textContent = tr("dial.busy");
 
   // window rail (the part that lights up as the night goes by)
-  el("path", { d: arcPath(R_RING, angleOf(WINDOW_START), angleOf(WINDOW_START) + 225), class: "rail" }, svg);
+  el("path", { d: arcPath(R_RING, angleOf(WINDOW_START), angleOf(WINDOW_START) + WINDOW_HOURS * DEG_PER_HOUR), class: "rail" }, svg);
   const lit = el("path", { d: "", class: "rail-lit" }, svg);
   const sweep = el("path", { d: "", class: "sweep" }, svg);
 
@@ -102,10 +111,10 @@ export function createDial(host) {
 
   // hourly runs inside the window; the 6-hourly discovery runs are the big ones
   const runs = [];
-  for (let k = 0; k <= 15; k++) {
+  for (let k = 0; k <= WINDOW_HOURS; k++) {
     const hour = (WINDOW_START + k) % 24;
     const deg = angleOf(hour);
-    const [x, y] = polar(R_RING - 22, deg);
+    const [x, y] = polar(R_RUN, deg);
     const big = k % 6 === 0;
     const dot = el("circle", { cx: f(x), cy: f(y), r: big ? 6.5 : 3.2, class: "run" + (big ? " run-big" : "") }, svg);
     runs.push({ k, dot });
@@ -133,10 +142,10 @@ export function createDial(host) {
       const hourAbs = WINDOW_START + nightT;
       const deg = angleOf(hourAbs);
       const start = angleOf(WINDOW_START);
-      const end = start + nightT * 15; // 15 degrees per hour
+      const end = start + nightT * DEG_PER_HOUR;
       hand.setAttribute("transform", `rotate(${f(deg)} ${C} ${C})`);
       lit.setAttribute("d", nightT > 0.01 ? arcPath(R_RING, start, end) : "");
-      sweep.setAttribute("d", nightT > 0.01 ? sector(30, R_RING - 54, Math.max(start, end - 70), end) : "");
+      sweep.setAttribute("d", nightT > 0.01 ? sector(R_SWEEP_IN, R_SWEEP_OUT, Math.max(start, end - SWEEP_SPAN_DEG), end) : "");
       const passed = Math.floor(nightT + 1e-6);
       if (passed !== lastRuns) {
         lastRuns = passed;
