@@ -3,8 +3,8 @@
 // person at the end. Then the layer under it is drawn, and the counted numbers arrive from
 // data/receipts.json, which scripts/receipts.py writes. Nothing here is a claim the repo can't back.
 
-import { clamp, lerp, qaWarn, smooth, easeOutExpo, track } from "../util.js";
-import { createCamera, createWideCamera, phoneRatio } from "../camera.js";
+import { PHONE_MAX_W, clamp, fmtCount, lerp, qaWarn, smooth, easeOutExpo, track } from "../util.js";
+import { WIDE_CLOSE, createCamera, createRoomFit, createWideCamera } from "../camera.js";
 import { t as tr } from "../i18n.js";
 
 // when each node appears (scroll progress inside the act); order matches the SVG
@@ -16,7 +16,6 @@ const WIRE_AT = [[0.08, 0.11], [0.14, 0.17], [0.2, 0.23], [0.24, 0.3], [0.33, 0.
 const ROUTE = [[85, 72], [320, 72], [555, 72], [790, 72], [790, 150], [85, 150], [85, 228], [320, 228], [555, 228], [705, 228]];
 const LEGS = ROUTE.slice(1).map((pt, i) => Math.hypot(pt[0] - ROUTE[i][0], pt[1] - ROUTE[i][1]));
 const TOTAL = LEGS.reduce((a, b) => a + b, 0);
-const CLOSE = 2.3; // wide screens: window px per SVG unit at the closest the camera gets
 
 function onRoute(f) {
   let d = clamp(f) * TOTAL;
@@ -30,9 +29,20 @@ function onRoute(f) {
   return ROUTE[ROUTE.length - 1];
 }
 
-const fmt = (n) => Math.round(n).toLocaleString("en-US");
 const counters = (root) => ({ lines: root.querySelector("#r-lines"), tests: root.querySelector("#r-tests"), deps: root.querySelector("#r-deps") });
 const testsOf = (j) => j.offline_tests ?? j.test_functions;
+
+/** The three figures, not counted yet: dashes rather than invented values. */
+const resetFigures = (out) => {
+  for (const el of Object.values(out)) el.textContent = "–";
+};
+
+/** The three figures written from the receipts; `k` (0..1) is how far the count-up has got. */
+const writeFigures = (out, j, k = 1) => {
+  out.lines.textContent = fmtCount(j.rust_lines * k);
+  out.tests.textContent = fmtCount(testsOf(j) * k);
+  out.deps.textContent = fmtCount(j.dependencies * k);
+};
 
 /** Reads data/receipts.json, writes the note under the figures and hands the numbers to `then`. */
 function loadReceipts(note, then) {
@@ -48,12 +58,8 @@ function loadReceipts(note, then) {
 /** With reduced motion nothing counts up: the three figures are written once, finished, and the note under them with them. */
 export function showReceipts(root) {
   const out = counters(root);
-  for (const el of Object.values(out)) el.textContent = "–";
-  loadReceipts(root.querySelector("#r-note"), (j) => {
-    out.lines.textContent = fmt(j.rust_lines);
-    out.tests.textContent = fmt(testsOf(j));
-    out.deps.textContent = fmt(j.dependencies);
-  });
+  resetFigures(out);
+  loadReceipts(root.querySelector("#r-note"), (j) => writeFigures(out, j));
 }
 
 export function createMachine(root) {
@@ -67,34 +73,24 @@ export function createMachine(root) {
   const token = root.querySelector(".token");
   const camera = createCamera(arch.querySelector("svg"), { w: 880, h: 440 });
   const wideCam = createWideCamera(arch, arch.querySelector("svg"), { w: 880, h: 440 });
-  // phones: the camera's window is as tall as the free room between the dial and the copy (the diagram is not squeezed on
-  // a tall phone and does not run into its own caption on a short one)
-  let roomKey = "";
-  const fitRoom = (vw, vh) => {
-    const key = vw + "x" + vh;
-    if (key === roomKey) return;
-    roomKey = key;
-    if (vw < 760) camera.setRatio(phoneRatio(copy.offsetTop - 12 - arch.offsetTop, arch.offsetWidth));
-  };
+  const room = createRoomFit(camera, copy, arch); // phones: the camera's window fits the free room (see camera.js)
   const out = counters(root);
 
   // the counted numbers; if the file is missing the figures stay as dashes rather than invented values
   let receipts = null;
   loadReceipts(note, (j) => { receipts = j; });
-  for (const el of Object.values(out)) el.textContent = "–";
+  resetFigures(out);
 
   return {
-    resize() {
-      roomKey = "";
-    },
+    resize: room.reset,
     update(p, ctx, _cur, fx) {
-      fitRoom(ctx ? ctx.vw : window.innerWidth, ctx ? ctx.vh : window.innerHeight);
+      room.fit(ctx.vw, ctx.vh);
       const inn = fx.inn;
       const gone = fx.out;
       const vis = inn * (1 - gone);
       copy.style.opacity = vis.toFixed(3);
       // phones: a shorter lift on the way out, so the headline does not climb into the diagram above it
-      copy.style.transform = `translate3d(0,${((1 - inn) * 5 - gone * (ctx && ctx.vw < 760 ? 1.5 : 4)).toFixed(2)}vh,0)`;
+      copy.style.transform = `translate3d(0,${((1 - inn) * 5 - gone * (ctx.vw < PHONE_MAX_W ? 1.5 : 4)).toFixed(2)}vh,0)`;
       arch.style.opacity = vis.toFixed(3);
 
       // two captions, one after the other
@@ -122,19 +118,19 @@ export function createMachine(root) {
       const down = smooth(0.52, 0.62, p);
       const wide = smooth(0.7, 0.86, p);
       const cx = lerp(lerp(tx, 440, down), 440, wide);
-      const vw = ctx ? ctx.vw : window.innerWidth;
-      const vh = ctx ? ctx.vh : window.innerHeight;
-      if (vw > 760 && vh >= 600) {
-        camera.aim(false);
+      const { vw, vh } = ctx;
+      if (vw > PHONE_MAX_W && vh >= 600) {
+        camera.reset();
         // how close the camera wants to be, in window px per SVG unit: biggest on the first node, whole picture at the end
-        const want = CLOSE * (vh / 1080) * track([[0, 1.25], [0.1, 1.25], [0.3, 1], [0.5, 0.82], [0.62, 0.63], [0.7, 0.63], [0.86, 0], [1, 0]], p);
+        const want = WIDE_CLOSE * (vh / 1080) * track([[0, 1.25], [0.1, 1.25], [0.3, 1], [0.5, 0.82], [0.62, 0.63], [0.7, 0.63], [0.86, 0], [1, 0]], p);
         const zoom = wideCam.zoomFor(vw, vh, want);
         // centred on the token itself: at this zoom the window shows the nodes around it, and the empty part ahead of it
         // is where the next node is about to appear
         wideCam.aim(vw, vh, lerp(lerp(x, 440, down), 440, wide), lerp(lerp(y, 300, down), 220, wide), zoom);
       } else {
         wideCam.off();
-        camera.aim(vw < 760, cx, lerp(lerp(ty, 330, down), 220, wide), lerp(440, 880, wide));
+        if (vw < PHONE_MAX_W) camera.aim(cx, lerp(lerp(ty, 330, down), 220, wide), lerp(440, 880, wide));
+        else camera.reset();
       }
 
       // the receipts
@@ -143,9 +139,7 @@ export function createMachine(root) {
       note.style.opacity = smooth(0.7, 0.78, p).toFixed(3);
       if (receipts) {
         const k = easeOutExpo(smooth(0.64, 0.86, p));
-        out.lines.textContent = fmt(receipts.rust_lines * k);
-        out.tests.textContent = fmt(testsOf(receipts) * k);
-        out.deps.textContent = fmt(receipts.dependencies * k);
+        writeFigures(out, receipts, k);
       }
     },
   };
