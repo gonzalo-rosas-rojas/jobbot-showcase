@@ -132,6 +132,11 @@ p { margin: 0; }
 
 /* act 01: the window opens */
 .a1-copy { position: absolute; left: var(--gutter); right: var(--gutter); top: clamp(104px, 19vh, 210px); will-change: transform, opacity; }
+/* who it is by: the same quiet mono label as the HUD, the name in the text colour, the link underlined like the links on the paper */
+.byline { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; margin-bottom: 2.4vh; color: var(--text-dim); }
+.byline b { color: var(--text); font-weight: 400; }
+.byline a { color: var(--text); text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; transition: color 0.2s; }
+.byline a:hover { color: var(--gold); }
 .kicker { color: var(--text-dim); max-width: 60ch; line-height: 1.6; margin-bottom: 3.2vh; font-size: clamp(14px, 1.05vw, 17px); }
 .mega {
   font-family: var(--display); font-weight: 700; font-stretch: 75%; font-variation-settings: "wdth" 75;
@@ -380,6 +385,9 @@ html[lang="es"] .honest { --fit: 0.94; }
 .rules code { font: 600 13px var(--mono); letter-spacing: 0.06em; color: var(--paper-dim); white-space: nowrap; }
 :where(html.js) .paper-end { visibility: hidden; }
 .paper-end { display: flex; align-items: flex-end; justify-content: space-between; gap: clamp(20px, 4vw, 64px); margin-top: 18px; }
+.paper-note { min-width: 0; }
+.next { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 22px; margin: 0 0 12px; font-size: clamp(15px, 1.3vw, 20px); line-height: 1.35; }
+.next-lead { flex: 1 1 100%; }
 .foot { margin-top: 0; max-width: 100ch; color: var(--paper-dim); font-size: 10.5px; line-height: 1.6; letter-spacing: 0.12em; }
 /* links on the paper (each rule's file, the source): the ink of their text, told apart by the underline */
 .paper a { color: inherit; text-decoration: underline; text-decoration-thickness: 1px; text-underline-offset: 3px; transition: color 0.2s; }
@@ -510,6 +518,7 @@ html.try-open { overflow: hidden; }
   .rules p { font-size: 15px; }
   .rules code { font-size: 11px; }
   .foot { font-size: 11px; }
+  .next { font-size: 15px; margin-bottom: 8px; }
   .paper-end { flex-direction: column-reverse; align-items: stretch; gap: 12px; }
   .cta { justify-content: center; }
   .try-note { font-size: 12px; }

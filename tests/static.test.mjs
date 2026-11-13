@@ -13,7 +13,8 @@ import { ROOT, SITE, fromFile, importSpecifiers, moduleGraph, read, readSite, si
 // The most the first load may weigh (HTML, stylesheet, the page's own scripts and fonts), in bytes. It is what the page
 // weighed when the budget was set, plus 5 %. When a change goes over it, either the change is too heavy or this number
 // is a decision to take on purpose, in the same commit.
-const FIRST_LOAD_BUDGET_BYTES = 218962; // 208535 bytes measured, plus 5 %
+// Raised from 218962 when the byline and the closing next step came in: about 2 KB of markup, style and Spanish text.
+const FIRST_LOAD_BUDGET_BYTES = 229923; // 218974 bytes measured, plus 5 %
 
 const html = readSite("index.html");
 const css = readSite("assets/css/main.css");
@@ -220,9 +221,74 @@ describe("the code the story cites", () => {
   });
 
   it("shows, for each of the five rules, the path its link opens", () => {
-    const rules = [...html.matchAll(/<li><p>[^<]+<\/p><code><a href="([^"]+)">([^<]+)<\/a><\/code><\/li>/g)];
+    const rules = [...html.matchAll(/<li><p>[^<]+<\/p><code><a href="([^"]+)"(?: rel="noopener")?>([^<]+)<\/a><\/code><\/li>/g)];
     assert.equal(rules.length, 5);
     for (const [, href, shown] of rules) assert.ok(href.endsWith(`/${shown}`), `${shown} is shown, ${href} is opened`);
+  });
+});
+
+describe("who the page is by, and where a reader goes next", () => {
+  const NAME = "Gonzalo Rosas Rojas";
+  const LINKEDIN = "https://www.linkedin.com/in/gonzalo-rosas-rojas";
+  const GITHUB = "https://github.com/gonzalo-rosas-rojas";
+  const JOBBOT = "https://github.com/gonzalo-rosas-rojas/jobbot";
+  const i18n = readSite("assets/js/i18n.js");
+
+  /** The markup between a start marker and the next end marker, and the <a> elements in it as { href, rel, text }. */
+  const slice = (from, to) => {
+    const start = html.indexOf(from);
+    assert.ok(start >= 0, `${from} is not in index.html`);
+    return html.slice(start, html.indexOf(to, start));
+  };
+  const links = (markup) =>
+    [...markup.matchAll(/<a\b([^>]*)>([^<]*)<\/a>/g)].map(([, attrs, text]) => ({
+      href: attrs.match(/href="([^"]*)"/)?.[1],
+      rel: attrs.match(/rel="([^"]*)"/)?.[1],
+      text,
+    }));
+
+  it("puts the author's name and a LinkedIn link in the first screen's copy, with rel=noopener", () => {
+    const first = slice('<div class="a1-copy">', '<div class="beat">');
+    assert.ok(first.includes(NAME), "the first screen does not say whose it is");
+    const linkedin = links(first).filter((a) => a.href === LINKEDIN);
+    assert.equal(linkedin.length, 1, "the first screen needs exactly one link to LinkedIn");
+    assert.match(linkedin[0].rel, /\bnoopener\b/);
+  });
+
+  it("keeps the name and the link in the Spanish first screen: no Spanish text replaces the byline's name or link", () => {
+    // the Spanish story rewrites elements by selector; none of them may be the byline as a whole
+    assert.doesNotMatch(i18n, /\["\.byline",/, "a rule rewrites the whole byline, name and link included");
+    assert.match(i18n, /\["\.byline \.by",\s*"Por"\]/, "the byline's 'By' has no Spanish text");
+  });
+
+  it("closes the story with a next step: the LinkedIn, GitHub and jobbot links at their exact addresses, each with rel=noopener", () => {
+    const next = slice('<p class="next">', "</p>");
+    const found = links(next);
+    assert.deepEqual(found.map((a) => a.href), [LINKEDIN, GITHUB, JOBBOT]);
+    for (const a of found) assert.match(a.rel, /\bnoopener\b/, `${a.href} has no rel=noopener`);
+    assert.ok(html.indexOf('<p class="next">') > html.indexOf('id="a8"'), "the next step is not in the last act");
+  });
+
+  it("has Spanish text for the next step: its sentence and the three link labels", () => {
+    assert.match(i18n, /\["\.next \.next-lead",\s*"[^"]+"\]/, "the next step's sentence has no Spanish text");
+    const labels = i18n.match(/\["\.next a",\s*\[([^\]]*)\]\]/);
+    assert.ok(labels, "the next step's links have no Spanish labels");
+    assert.equal(labels[1].split(",").filter((s) => s.trim()).length, 3);
+  });
+
+  it("holds no mailto: address anywhere in the page or its scripts", () => {
+    assert.doesNotMatch(html, /mailto:/i);
+    for (const file of jsFiles()) assert.doesNotMatch(readSite(file), /mailto:/i, `${file} holds a mailto: address`);
+  });
+
+  it("does not link LinkedIn or the author's GitHub anywhere but where this block says", () => {
+    const all = links(html).map((a) => a.href);
+    assert.equal(all.filter((h) => h === LINKEDIN).length, 2, "LinkedIn is linked in the first screen and in the closing, no more");
+    assert.equal(all.filter((h) => h === GITHUB).length, 1);
+  });
+
+  it("gives every external link of the page rel=noopener", () => {
+    for (const a of links(html)) if (/^https?:\/\//.test(a.href ?? "")) assert.match(a.rel ?? "", /\bnoopener\b/, `${a.href} has no rel=noopener`);
   });
 });
 

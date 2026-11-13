@@ -51,6 +51,7 @@ const ES_DOM = [
   [".act", ["LA VENTANA SE ABRE", "LEER", "DECIDIR", "LLENAR", "SALA DE MÁQUINAS", "SEGUIR", "APROBAR", "LA VENTANA SE CIERRA"], "data-label"],
 
   // 01 the window opens
+  [".byline .by", "Por"],
   [".a1-copy .kicker", "Un bot en Rust que hace una búsqueda de empleo. Todo en esta página son datos ficticios."],
   ["#h1", '<span class="line" data-split>El bot trabaja</span><span class="line"><span data-split>las horas que</span> <em class="serif" data-split="word">yo no.</em></span>'],
   [".a1-copy .lede", "De 18:00 a 09:00, jobbot lee portales públicos de empleo, puntúa lo que encuentra, adapta un CV y llena los formularios. Se detiene en cada punto donde una persona debe decidir."],
@@ -135,7 +136,9 @@ const ES_DOM = [
     "Donde un bot sería detectado, llena el formulario y yo lo envío.",
     "Se queda en silencio en mis horas ocupadas.",
   ]],
-  [".paper-end .foot", 'Hecho con ayuda de IA. Todos los datos de esta página son ficticios; las cifras salen del código real (scripts/receipts.py). El código está en <a href="https://github.com/gonzalo-rosas-rojas/jobbot">GitHub</a>.'],
+  [".paper-end .foot", 'Hecho con ayuda de IA. Todos los datos de esta página son ficticios; las cifras salen del código real (scripts/receipts.py). El código está en <a href="https://github.com/gonzalo-rosas-rojas/jobbot" rel="noopener">GitHub</a>.'],
+  [".next .next-lead", "¿Quieres conversar sobre este trabajo? Encuéntrame aquí."],
+  [".next a", ["LinkedIn", "Perfil de GitHub", "Repositorio de jobbot"]],
 
   // the live panel overlay
   ["#try", "El panel de jobbot, funcionando con datos ficticios", "aria-label"],
