@@ -21,10 +21,14 @@ DEMO = os.path.join(HERE, "..", "site", "demo")
 COMMIT = re.compile(r"[0-9a-f]{7,40}")
 
 
-def write_build_record(demo_dir, commit, now=None):
-    """Writes demo_dir/BUILD.txt: the commit the demo was built from and the UTC time of the copy. Returns the text."""
+def check_commit(commit):
     if not COMMIT.fullmatch(commit):
         raise ValueError("the commit must be 7 to 40 hex digits, got %r" % commit)
+
+
+def write_build_record(demo_dir, commit, now=None):
+    """Writes demo_dir/BUILD.txt: the commit the demo was built from and the UTC time of the copy. Returns the text."""
+    check_commit(commit)
     now = now or datetime.datetime.now(datetime.timezone.utc)
     text = "commit: %s\ndate: %s\n" % (commit, now.strftime("%Y-%m-%dT%H:%M:%SZ"))
     with open(os.path.join(demo_dir, "BUILD.txt"), "w", encoding="utf-8", newline="\n") as f:
@@ -33,8 +37,7 @@ def write_build_record(demo_dir, commit, now=None):
 
 
 def copy_demo(src, commit):
-    if not COMMIT.fullmatch(commit):
-        raise ValueError("the commit must be 7 to 40 hex digits, got %r" % commit)
+    check_commit(commit)  # before anything is written: write_build_record checks again, but only after index.html is copied
     if not os.path.isfile(src):
         raise ValueError("the demo build to copy was not found: %s" % src)
     html = open(src, encoding="utf-8").read()
@@ -53,8 +56,9 @@ def copy_demo(src, commit):
         shutil.rmtree(fonts_dst)
     shutil.copytree(fonts_src, fonts_dst)
     write_build_record(DEMO, commit)
-    print("demo copied: %d bytes and fonts/ (%d files) from %s, commit %s" % (
-        len(html.encode("utf-8")), sum(len(f) for _, _, f in os.walk(fonts_dst)), os.path.dirname(os.path.abspath(src)), commit))
+    size = len(html.encode("utf-8"))
+    font_files = sum(len(names) for _, _, names in os.walk(fonts_dst))
+    print("demo copied: %d bytes and fonts/ (%d files) from %s, commit %s" % (size, font_files, os.path.dirname(os.path.abspath(src)), commit))
 
 
 def main(argv):
