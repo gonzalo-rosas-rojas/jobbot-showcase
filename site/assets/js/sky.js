@@ -8,15 +8,15 @@ import { mixRgb, rgb, mulberry32, clamp, track, reducedMotion } from "./util.js"
 
 const FRAME_MS = 50;
 
-// [nightT, top, horizon, warm glow colour, warm alpha, stars alpha]
+// The sky at given hours of the night: its top and horizon colours, the warm glow colour and alpha, the stars' alpha.
 const STOPS = [
-  [0.0, "#0b1226", "#222c50", "#ff9440", 0.42, 0.12],
-  [1.2, "#090e1d", "#1c2441", "#d9703a", 0.26, 0.5],
-  [2.6, "#05080f", "#0e1630", "#3a4a7c", 0.1, 0.9],
-  [10.0, "#04060b", "#0a1224", "#27386a", 0.07, 1.0],
-  [12.6, "#070b17", "#18203a", "#5a5a8a", 0.14, 0.75],
-  [14.0, "#101830", "#3a4468", "#ffb27a", 0.42, 0.3],
-  [15.0, "#243050", "#8c8da0", "#ffd9a8", 0.55, 0.05],
+  { at: 0.0, top: "#0b1226", hor: "#222c50", warm: "#ff9440", warmA: 0.42, stars: 0.12 },
+  { at: 1.2, top: "#090e1d", hor: "#1c2441", warm: "#d9703a", warmA: 0.26, stars: 0.5 },
+  { at: 2.6, top: "#05080f", hor: "#0e1630", warm: "#3a4a7c", warmA: 0.1, stars: 0.9 },
+  { at: 10.0, top: "#04060b", hor: "#0a1224", warm: "#27386a", warmA: 0.07, stars: 1.0 },
+  { at: 12.6, top: "#070b17", hor: "#18203a", warm: "#5a5a8a", warmA: 0.14, stars: 0.75 },
+  { at: 14.0, top: "#101830", hor: "#3a4468", warm: "#ffb27a", warmA: 0.42, stars: 0.3 },
+  { at: 15.0, top: "#243050", hor: "#8c8da0", warm: "#ffd9a8", warmA: 0.55, stars: 0.05 },
 ];
 
 // fraction of lit windows through the night (people go to bed, then wake up)
@@ -24,16 +24,16 @@ const LIT = [[0, 0.55], [1, 0.62], [3, 0.46], [5.5, 0.2], [8, 0.07], [11, 0.04],
 
 function sample(nightT) {
   let i = 0;
-  while (i < STOPS.length - 2 && nightT > STOPS[i + 1][0]) i++;
+  while (i < STOPS.length - 2 && nightT > STOPS[i + 1].at) i++;
   const a = STOPS[i];
   const b = STOPS[i + 1];
-  const t = clamp((nightT - a[0]) / (b[0] - a[0]));
+  const t = clamp((nightT - a.at) / (b.at - a.at));
   return {
-    top: mixRgb(rgb(a[1]), rgb(b[1]), t),
-    hor: mixRgb(rgb(a[2]), rgb(b[2]), t),
-    warm: mixRgb(rgb(a[3]), rgb(b[3]), t),
-    warmA: a[4] + (b[4] - a[4]) * t,
-    stars: a[5] + (b[5] - a[5]) * t,
+    top: mixRgb(rgb(a.top), rgb(b.top), t),
+    hor: mixRgb(rgb(a.hor), rgb(b.hor), t),
+    warm: mixRgb(rgb(a.warm), rgb(b.warm), t),
+    warmA: a.warmA + (b.warmA - a.warmA) * t,
+    stars: a.stars + (b.stars - a.stars) * t,
   };
 }
 
@@ -105,9 +105,7 @@ export function createSky(canvas) {
     }
   }
 
-  function draw(now) {
-    const s = sample(nightT);
-    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  function paintSky(s) {
     const lg = g.createLinearGradient(0, 0, 0, h);
     lg.addColorStop(0, `rgb(${s.top})`);
     lg.addColorStop(0.62, `rgb(${mixRgb(s.top, s.hor, 0.5)})`);
@@ -122,7 +120,9 @@ export function createSky(canvas) {
     hg.addColorStop(1, `rgba(${s.warm},0)`);
     g.fillStyle = hg;
     g.fillRect(0, 0, w, h);
+  }
 
+  function paintStars(s, now) {
     // stars drift up slowly as you scroll; they never move faster than the content
     const drift = scrollY * 0.012;
     const tw = now / 1000;
@@ -135,8 +135,10 @@ export function createSky(canvas) {
       g.arc(st.x * w, y, st.r, 0, Math.PI * 2);
       g.fill();
     }
+  }
 
-    // the city: three layers, windows lit according to the hour
+  // the city: three layers, windows lit according to the hour
+  function paintCity(s) {
     const lit = track(LIT, nightT);
     const unit = clamp(h / 900, 0.7, 1.5);
     const baseY = h + 2;
@@ -144,6 +146,14 @@ export function createSky(canvas) {
     skyline(far, baseY, { scale: unit * 0.9, offset: 40 + scrollY * 0.004, body: body(0.55), winRgb: "255,214,150", winAlpha: 0.35, lit: lit * 0.9, size: 1.8 });
     skyline(mid, baseY, { scale: unit, offset: 140 + scrollY * 0.01, body: body(0.25), winRgb: "255,205,130", winAlpha: 0.6, lit, size: 2.6 });
     skyline(near, baseY, { scale: unit * 1.05, offset: 300 + scrollY * 0.02, body: body(0.0), winRgb: "255,196,110", winAlpha: 0.85, lit: lit * 0.8, size: 3.4 });
+  }
+
+  function draw(now) {
+    const s = sample(nightT);
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    paintSky(s);
+    paintStars(s, now);
+    paintCity(s);
   }
 
   function loop() {
@@ -156,9 +166,9 @@ export function createSky(canvas) {
   if (!still) loop();
 
   return {
-    update(t, sy) {
-      nightT = t;
-      scrollY = sy;
+    update(hour, scroll) {
+      nightT = hour;
+      scrollY = scroll;
       if (still) draw(0);
     },
   };
