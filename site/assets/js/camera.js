@@ -103,7 +103,7 @@ export function createWideCamera(box, svg, base) {
       const k0 = scale();
       return k0 ? Math.max(1, k / k0) : 1;
     },
-    // centre (cx, cy) in SVG units, zoom as above
+    // centre (cx, cy) in SVG units, zoom as above; the edge fade that goes with that zoom is set here too
     aim({ cx, cy, zoom }) {
       const k0 = scale();
       if (!k0) return;
