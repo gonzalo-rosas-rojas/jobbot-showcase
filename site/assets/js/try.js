@@ -21,6 +21,7 @@ export function createTry({ warm = true } = {}) {
   const behind = [...document.body.children].filter((el) => el !== root);
   let opener = null;
   let isOpen = false;
+  const seen = new WeakSet();
 
   const load = () => {
     if (!frame.getAttribute("src")) frame.setAttribute("src", withLang(frame.dataset.src));
@@ -30,8 +31,8 @@ export function createTry({ warm = true } = {}) {
   const watchFrame = () => {
     let doc = null;
     try { doc = frame.contentDocument; } catch (e) { /* not reachable: the close button still works */ }
-    if (!doc || doc.__tryWatched) return;
-    doc.__tryWatched = true;
+    if (!doc || seen.has(doc)) return;
+    seen.add(doc);
     doc.addEventListener("keydown", (e) => {
       if (e.key !== "Escape" || !isOpen) return;
       const busy = doc.querySelector(".keys, .pal, #detail.open, #app li.cur");
