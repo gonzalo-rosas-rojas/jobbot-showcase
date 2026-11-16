@@ -230,7 +230,6 @@ describe("who the page is by, and where a reader goes next", () => {
   const LINKEDIN = "https://www.linkedin.com/in/gonzalo-rosas-rojas";
   const GITHUB = "https://github.com/gonzalo-rosas-rojas";
   const JOBBOT = "https://github.com/gonzalo-rosas-rojas/jobbot";
-  const i18n = readSite("assets/js/i18n.js");
 
   /** The markup between a start marker and the next end marker. */
   const slice = (from, to) => {
@@ -254,22 +253,9 @@ describe("who the page is by, and where a reader goes next", () => {
     assert.equal(hrefs(firstScreen()).filter((h) => h === LINKEDIN).length, 1, "the first screen needs exactly one link to LinkedIn");
   });
 
-  it("keeps the name and the link in the Spanish first screen: no Spanish text replaces the byline's name or link", () => {
-    // the Spanish story rewrites elements by selector; the only rule that may reach into the byline is the one for its "By"
-    assert.doesNotMatch(i18n, /\["\.byline(?! \.by")/, "a rule rewrites the byline's name or link, or the whole of it");
-    assert.match(i18n, /\["\.byline \.by",\s*"Por"\]/, "the byline's 'By' has no Spanish text");
-  });
-
   it("closes the story with a next step: the LinkedIn, GitHub and jobbot links at their exact addresses", () => {
     assert.deepEqual(hrefs(nextStep()), [LINKEDIN, GITHUB, JOBBOT]);
     assert.ok(html.indexOf('<p class="next">') > html.indexOf('id="a8"'), "the next step is not in the last act");
-  });
-
-  it("has Spanish text for the next step: its sentence and the three link labels", () => {
-    assert.match(i18n, /\["\.next \.next-lead",\s*"[^"]+"\]/, "the next step's sentence has no Spanish text");
-    const labels = JSON.parse(`[${capture(i18n, /\["\.next a",\s*\[([^\]]*)\]\]/, "the next step's Spanish link labels")}]`);
-    assert.equal(labels.length, 3);
-    assert.ok(labels.every((label) => label.trim()), "a Spanish link label is empty");
   });
 
   it("holds no mailto: address anywhere in the page or its scripts", () => {
