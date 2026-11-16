@@ -104,14 +104,20 @@ describe("the story in a browser", { skip }, () => {
     await page.close();
   });
 
-  it("keeps the author's name and LinkedIn link in the Spanish first screen, and writes the closing in Spanish", async () => {
+  const LINKEDIN = "https://www.linkedin.com/in/gonzalo-rosas-rojas";
+
+  it("keeps the author's name and LinkedIn link in the Spanish first screen", async () => {
     const page = await open("?lang=es&qa=1");
-    const linkedin = "https://www.linkedin.com/in/gonzalo-rosas-rojas";
     const byline = await page.eval(`(() => {
       const by = document.querySelector(".byline");
       return { by: by.querySelector(".by").textContent, name: by.querySelector("b").textContent, links: [...by.querySelectorAll("a")].map((a) => [a.getAttribute("href"), a.textContent]) };
     })()`);
-    assert.deepEqual(byline, { by: "Por", name: "Gonzalo Rosas Rojas", links: [[linkedin, "LinkedIn"]] });
+    assert.deepEqual(byline, { by: "Por", name: "Gonzalo Rosas Rojas", links: [[LINKEDIN, "LinkedIn"]] });
+    await page.close();
+  });
+
+  it("writes the closing in Spanish, with its three links", async () => {
+    const page = await open("?lang=es&qa=1");
     const next = await page.eval(`(() => {
       const next = document.querySelector(".next");
       return { lead: next.querySelector(".next-lead").textContent, links: [...next.querySelectorAll("a")].map((a) => [a.getAttribute("href"), a.textContent]) };
@@ -119,7 +125,7 @@ describe("the story in a browser", { skip }, () => {
     assert.deepEqual(next, {
       lead: "¿Quieres conversar sobre este trabajo? Encuéntrame aquí.",
       links: [
-        [linkedin, "LinkedIn"],
+        [LINKEDIN, "LinkedIn"],
         ["https://github.com/gonzalo-rosas-rojas", "Perfil de GitHub"],
         ["https://github.com/gonzalo-rosas-rojas/jobbot", "Repositorio de jobbot"],
       ],
