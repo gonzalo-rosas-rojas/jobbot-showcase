@@ -1,2 +1,10 @@
+# Every text file is checked out with LF, on every system: the files in a working copy are byte for byte the files the
+# host serves, so the checks that weigh or hash them say the same on Windows as on the workflow's Linux.
+* text=auto eol=lf
+*.woff2 binary
+*.png binary
+*.jpg binary
+*.gif binary
+
 # site/demo/index.html is the panel v1 demo build that scripts/build-demo.py copies in as it is: keep it out of the language stats.
 site/demo/index.html linguist-generated=true
