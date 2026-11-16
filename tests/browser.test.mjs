@@ -350,6 +350,16 @@ describe("with the preference for reduced motion", { skip }, () => {
         await page.close();
       });
 
+      it("writes the note under the figures with the date and the file count of receipts.json", async () => {
+        const page = await open(search, { reducedMotion: true });
+        const note = search.includes("lang=es")
+          ? `Contado el ${receipts.counted_on} por scripts/receipts.py: ${receipts.rust_files} archivos Rust; las pruebas son los #[test] no marcados #[ignore], no una ejecución de pruebas.`
+          : `Counted on ${receipts.counted_on} by scripts/receipts.py: ${receipts.rust_files} Rust files; tests are #[test]s not marked #[ignore], not a test run.`;
+        await page.waitFor(`document.getElementById("r-note").textContent.includes(${JSON.stringify(receipts.counted_on)})`, "the note");
+        assert.equal(await page.eval(`document.getElementById("r-note").textContent`), note);
+        await page.close();
+      });
+
       it("does not ask for the panel until \"Use the panel\" is pressed, and then opens it", async () => {
         const page = await open(search, { reducedMotion: true });
         // nothing observable says "the animated page would have asked by now": wait longer than it ever does

@@ -23,8 +23,6 @@ const ENTRY = tags.find((t) => t.name === "script" && t.attrs.type === "module")
 
 /** The text without its block comments (the only kind CSS has). */
 const stripBlockComments = (text) => text.replace(/\/\*[\s\S]*?\*\//g, "");
-/** Script source without comments: block ones, and `//` ones whether they start a line or end one (`https://` stays). */
-const stripComments = (text) => stripBlockComments(text).replace(/(^|\s)\/\/.*$/gm, "");
 const external = /^(?:[a-z][a-z0-9+.-]*:)?\/\//i;
 const bare = (ref) => ref.split(/[?#]/)[0];
 const jsFiles = () => moduleGraph(ENTRY);
@@ -178,22 +176,13 @@ describe("the vendored fonts", () => {
 
 describe("site/data/receipts.json", () => {
   const receipts = JSON.parse(readSite("data/receipts.json"));
-  // the fields the story reads: machine.js for the three counters and i18n.js for the Spanish note
-  const readByTheStory = { rust_lines: "machine.js", offline_tests: "machine.js", dependencies: "machine.js", rust_files: "i18n.js", counted_on: "machine.js" };
-  const SOURCE_OF = { "machine.js": "assets/js/scenes/machine.js", "i18n.js": "assets/js/i18n.js" };
+  // the fields the story shows (tests/browser.test.mjs checks that each one reaches the page): three counters, and the note's file count and date
+  const readByTheStory = ["rust_lines", "offline_tests", "dependencies", "rust_files", "counted_on"];
 
   it("has every field the story reads, as a count or a date", () => {
-    for (const key of Object.keys(readByTheStory)) {
+    for (const key of readByTheStory) {
       if (key === "counted_on") assert.match(receipts[key], /^\d{4}-\d{2}-\d{2}$/, key);
       else assert.ok(Number.isInteger(receipts[key]) && receipts[key] >= 0, `${key} is a count`);
-    }
-  });
-
-  it("is still read under those names by the scripts", () => {
-    for (const [key, file] of Object.entries(readByTheStory)) {
-      assert.ok(SOURCE_OF[file], `${file} is not a file this check knows how to find`);
-      // read as a property of the receipts (j.rust_lines), in code and not in a comment
-      assert.match(stripComments(readSite(SOURCE_OF[file])), new RegExp(`\\.${key}\\b`), `${file} no longer reads ${key}`);
     }
   });
 
